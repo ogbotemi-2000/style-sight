@@ -73,29 +73,32 @@ function rStyles() {
   let i=Object.keys(rules).length, styles=[].slice.call(frame.contentDocument.styleSheets), stylesLen=styles.length,
       list = qS('ol',0,reading);
 
-  // add a list to avoid re-writing current last list if i>0, i.e. esuming from previous
+  // add a list to avoid re-writing current last list if i>0, i.e. resuming from previous
   i&&To(list,'lEC').after(To(list,'lEC').cloneNode(!0)),
 // 1st phase of extraction: read cssRules and store them in `rules` with their href or key
 loop=_=>{
   rAF.boost=3;
   if(i==stylesLen) {
     // check if more styles have been added and continue from there on
-    if(stylesLen!==frame.contentDocument.styleSheets.length) return console.log("::1ST:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loop=null, rStyles();
-		
-		let i = 0, keys=Object.keys(rules), keysLength=keys.length, j=0,
+    // if(stylesLen!==frame.contentDocument.styleSheets.length) return console.log("::1ST:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loop=null, rStyles();
+				
+		let i = 0, keys=Object.keys(rules), keysLength=keys.length, j=0, lists = list.children, size=0,
 		cssRules = rules[keys[j]], rulesLen = cssRules.length, sheets=[];/*will be reset for next cssRule*/
 		// 2nd phase: filter out and store CSS style blocks only
 		loop=_=>{
 		  rAF.boost=3;
-			if(j==keysLength) alert("::DONE READING::"), loop=console.log('::RULES::', styles.length, frame.contentDocument.styleSheets.length, rules);
+			if(j==keysLength)/* alert("::DONE READING::"),*/ To(state,'pES').click(), loop=console.log('::RULES::', styles.length, frame.contentDocument.styleSheets.length, rules);
       else {
 				// reset and move on to the next cssRule
 				if(i==rulesLen) {
 				  if(stylesLen!==frame.contentDocument.styleSheets.length) console.log("::2ND:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loop=null, rStyles();
-				  
-				  rules[keys[j]]=sheets, rulesLen=(cssRules = rules[keys[j]]).length, ++j, i=0, sheets=[];
-				}
-				else cssRules[i].constructor.name == 'CSSStyleRule' && sheets.push(cssRules[i]);
+
+				  rules[keys[j]]=sheets, ++j, rules[keys[j]] && (rulesLen=(cssRules = rules[keys[j]]).length), size=i=0, sheets=[];
+
+
+
+				} else cssRules[i].constructor.name == 'CSSStyleRule' && sheets.push(cssRules[i]),
+						To(lists[j], {2:'lEC'}).textContent=byteFormat(size+=cssRules[i].cssText.length);
 				i++
 			}
 	  }
@@ -124,7 +127,7 @@ loop=_=>{
 	<strong class="text-center">Contact</strong>
 	<form onsubmit="return false;" style="--focus-within-no-focus-transition: opacity 0.5s ease, transform 0.3s 0.05s ease-out, visibility 0s 0.12s; margin: auto;" class="send-email absolute no-focus-within flex flex-col bottom-2 border-2 bg-white p-1.5 top-10 right-0 sm:right-2 left-0 sm:left-24 sm:top-2 sm:bottom-4 tooltip no-hover no-focus slide rounded-inherit">
 		<div class="w-full space-x-2 items-center justify-between flex sm:flex-col sm:items-start sm:space-x-0">
-			<button class="ripple text-center font-fredoka relative flex justify-center p-1 px-2 bg-gray-100 rounded-full hover:bg-gray-300 focus:border-gray-600 border-4 duration-200" onclick="requestAnimationFrame(_=&gt;this.trigger.focus()), this.trigger.mail.classList.remove('show')" type="button">X</button>
+			<button class="ripple text-center font-fredoka relative flex justify-center p-1 px-2 bg-gray-100 rounded-full hover:bg-gray-300 focus:border-gray-600 border-4 duration-200" onclick="requestAnimationFrame(_=&gt;this.trigger.focus()), this.trigger.mail.classList.remove('show')" type="button" disabled="">proxying</button>
 			<fieldset class="w-full">
 				<label class="flex items-center justify-around space-x-2">
 					<p class="whitespace-pre">From:     </p>
@@ -223,7 +226,7 @@ loop=_=>{
 	</nav><main class="relative text-center vh-full flex justify-around items-center flex-col">
           <!--overflow-hidden class on section below showed only the elements in .__class__ -  had to remove it- It is dangerous for elements with a auto height and shifting scroll depth due to editable children -->
           
-<canvas id="gradient" width="798" height="600" class="w-full h-full absolute duration-500 ease-out pointer-events-none is-loaded"></canvas>
+<canvas id="gradient" width="1600" height="600" class="w-full h-full absolute duration-500 ease-out pointer-events-none is-loaded"></canvas>
 <section hidden="">
             <span class="text-gray-600 mr-4">Received as:</span>
             <article class="mb-2 lg:mb-7 [&amp;&gt;*]:inline-block [&amp;&gt;*]:align-middle sm:w-96 inline-block mr-2"><code class="mr-4">[URL]:: &lt;website url&gt;</code>
@@ -346,35 +349,35 @@ loop=_=>{
 
   <!-- Paint Splash/Spill Indicator -->
   <path d="M7 9l-.5 4c0 1 .5 2 1.5 2s1.5-1 1.5-2L7 9Z" fill="currentColor"></path>
-</svg><code class="absolute tooltip p-1.5 bg-yellow-200 left-0 top-full mt-1 text-xs rounded-bl-xl">backgrounds will only apply for webpages that rely on a default of white background</code></span><div class="relative align-middle border-r border-t rounded-tr-xl border-current"><button class="p-1.5 py-2.5"><span class="align-middle p-1.5 inline-block rounded-full mr-2 border border-current"></span> none</button><ul onclick="let cls=['none','white','black'], btns=qS('button',!0,this), t=event.target; if(t.tagName!='BUTTON') return; frame.style.cssText='background:'+cls[btns.indexOf(t)], To(this,'pES').innerHTML=t.innerHTML" class="w-20 right-0 absolute tooltip bg-white border-t-0 border border-current rounded-b-xl p-1.5 mt-1">
+</svg><code class="absolute tooltip p-1.5 bg-yellow-200 left-0 top-full mt-1 text-xs rounded-bl-xl">backgrounds will only apply for webpages that rely on a default of white background</code></span><div class="relative align-middle border-r border-t rounded-tr-xl border-current"><button class="p-1.5 py-2.5"><span class="align-middle p-1.5 inline-block rounded-full mr-2 border border-current"></span>none</button><ul onclick="let cls=['none','white','black'], btns=qS('button',!0,this), t=event.target; if(t.tagName!='BUTTON') return; frame.style.cssText='background:'+cls[btns.indexOf(t)], To(this,'pES').innerHTML=t.innerHTML" class="w-20 right-0 absolute tooltip bg-white border-t-0 border border-current rounded-b-xl p-1.5 mt-1 space-y-1">
       <li><button><span class="align-middle p-1.5 inline-block rounded-full mr-2 border border-current"></span>none</button></li><li><button><span class="align-middle p-1.5 inline-block rounded-full border-2 bg-white border-current mr-1"></span>white</button></li><li><button><span class="align-middle p-1.5 inline-block rounded-full border-2 bg-black text-black border-current mr-1"></span>black</button></li>
     </ul>
   </div>
 </section>
 
 <section>
-  <button class="ripple relative rounded-full duration-500 ease-out text-yellow-700 p-0 align-middle mr-2">
+  <button class="ripple relative rounded-full duration-500 ease-out text-yellow-700 p-0 align-middle mr-2" onclick="(loop=To(this,[{2:'fEC'},'cL']).toggle('animate-spin'))&amp;&amp;rStyles()">
 <div class="rounded-inherit overflow-hidden absolute inset-0 text-yellow-600 bg-blue-100"><div style="transform-origin: bottom; animation-duration: 3s; transform-origin: top right" class="top-1/2 right-1/2 inset-0 origin-center bg-gradient-to-r from-transparent via-current to-tansparent absolute animate-spin"></div></div>
-    <div style="background-image:url(icons/play-pause.webp);background-size:50%;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div></button>
+    <div style="background-image: url(&quot;icons/play-pause.webp&quot;); background-size: 50% auto;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div></button>
     <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t border-current p-1 ripple">Reading styles...<code class="inline-block p-1.5 border-b border-current">view</code></button>
 </section>
 
-<main style='max-width:100%' class="inert w-full sm:w-auto absolute bg-gray-100 left-0 top-full p-2 mt-px">
-  <button onclick="To(this,['pN','cL']).add('inert')" class='absolute text-xs right-0 top-0 m-1 p-3 border border-current rounded-full'>close</button>
+<main style="max-width:100%" class="w-full sm:w-auto absolute bg-gray-100 right-0 top-full p-2 mt-px">
+  <button onclick="To(this,['pN','cL']).add('inert')" class="absolute text-xs right-0 top-0 m-1 p-3 border border-current rounded-full">close</button>
   <!--section for reading styles-->
-  <section id=reading>
-    <h3 class=text-sm>CSS Stylesheets</h3>
+  <section id="reading">
+    <h3 class="text-sm">CSS Stylesheets</h3>
     All styles that affect the page
-    <ol style='max-height:6rem' class="overflow-y-scroll text-left">
-      <li class='divide-x divide-current [&>*]:p-1 flex items-center'>
-        <code class='w-full truncate'>Inline styles or linked styles</code>
-        <code>&lt;N&gt;&nbsp;KB</code>
+    <ol style="max-height:6rem" class="overflow-y-scroll text-left">
+      <li class="divide-x divide-current [&amp;&gt;*]:p-1 flex items-center">
+        <code class="w-full truncate">http://localhost:3000/css/page.css</code>
+        <pre>&lt;N&gt;&nbsp;KB</pre>
       </li>
     </ol>
   </section>
 </main>
 </aside>
-<iframe id="frame" class="h-full w-full rounded-t-3xl"></iframe>
+<iframe id="frame" class="h-full w-full rounded-t-3xl" src="_index.html" style="background: none;"></iframe>
 <aside class="absolute rounded-3xl bg-white p-5 text-black duration-300 text-left inert"><h3 class="text-lg font-semibold opacity-70">Proxying Webpage And Its Assets</h3><p>Takes a little longer than direct visits...</p>
 </aside>
 </section>

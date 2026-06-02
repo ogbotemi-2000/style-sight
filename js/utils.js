@@ -81,6 +81,18 @@ window.addEventListener('DOMContentLoaded', _=>{
 
 /*end*/
 
+  function byteFormat(num, res='') {
+    if(num<1024) {
+      res = num+' bytes';
+    } else if(1024<=num&&num<1048576) {
+      res += num/1024,
+      res = res.slice(0, res.indexOf('.')+3) /*3-1 dp*/+' KB'
+    } else {
+      res += num/1048576,
+      res = res.slice(0, res.indexOf('.')+3) /*3-1 dp*/+' MB'
+    }
+    return res
+  }
   function relation(parent, child) {
       return [parent.compareDocumentPosition(child)&Node.DOCUMENT_POSITION_CONTAINED_BY,
               parent.compareDocumentPosition(child)&Node.DOCUMENT_POSITION_CONTAINS]
