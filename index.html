@@ -70,31 +70,31 @@ background: #282828;
 let rules = {};
 function rStyles() {
   // make a static copy of styleSheets to not worry over dynamic increase in its length
-  let i=Object.keys(rules).length, inline=[].filter.call(frame.contentDocument.styleSheets, st=>!st.href), styles=inline || [].slice.call(frame.contentDocument.styleSheets),
+  let i=Object.keys(rules).length, styles=[].slice.call(frame.contentDocument.styleSheets),
       stylesLen=styles.length, list = qS('ol',0,reading);
   To(state,'fC').data = 'Reading styles...',
   // add a list to avoid re-writing current last list if i>0, i.e. resuming from previous
-  i&&To(list,'lEC').after(To(list,'lEC').cloneNode(!0)),
+  i&&To(list,'lEC').after(To(list,'lEC').cloneNode(!0));
+console.log("::RECURSIVE::", !!loops[0]),
 // 1st phase of extraction: read cssRules and store them in `rules` with their href or key
-loop=_=>{
-  rAF.boost=1;
+loops[0]=_=>{
+  loops[0].boost=200;
   if(i==stylesLen) {
     // check if more styles have been added and continue from there on
-    //if(stylesLen!==frame.contentDocument.styleSheets.length) return console.log("::1ST:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loop=null, rStyles();
+    // if(stylesLen!==frame.contentDocument.styleSheets.length) return console.log("::1ST:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loops[0]=null, rStyles();
 				
 		let i = 0, keys=Object.keys(rules), keysLength=keys.length, j=0, lists = list.children, size=0,
 		cssRules = rules[keys[j]], rulesLen = cssRules.length, sheets=[];/*will be reset for next cssRule*/
-		console.log('::LOG::', keys, rules, rules[keys[j]]),
 		// 2nd phase: filter out and store CSS style blocks only
-		loop=_=>{
-		  rAF.boost=1;
-			if(j==keysLength) alert("::DONE READING::"), To(state,'fC').data=`Read styles(${keysLength})`, To(state,'pES').click(); //loop=console.log('::RULES::', styles.length, frame.contentDocument.styleSheets.length, [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), rules);
+		loops[0]=_=>{
+		  loops[0].boost=200;
+			if(j==keysLength) return alert("::DONE READING::"), loops[0]=null, To(state,'fC').data=`Read styles(${keysLength})`, To(state,'pES').click(); //loops[0]=console.log('::RULES::', styles.length, frame.contentDocument.styleSheets.length, [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), rules);
       else {
 				// reset and move on to the next cssRule
 				if(i==rulesLen) {
-				  //if(stylesLen!==frame.contentDocument.styleSheets.length) console.log("::2ND:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loop=null, rStyles();
+				  //if(stylesLen!==frame.contentDocument.styleSheets.length) console.log("::2ND:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loops[0]=null, rStyles();
 				  rules[keys[j]]=sheets, ++j, rules[keys[j]] && (rulesLen=(cssRules = rules[keys[j]]).length), size=i=0, sheets=[];
-				} else cssRules[i].constructor.name == 'CSSStyleRule' && sheets.push(cssRules[i]),
+				} else if(cssRules[i]) cssRules[i].constructor.name == 'CSSStyleRule' && sheets.push(cssRules[i]),
 						To(lists[j], {2:'lEC'}).textContent=byteFormat(size+=cssRules[i].cssText.length);
 				i++
 			}
@@ -106,7 +106,7 @@ loop=_=>{
 </script>
     </head><body class="text-white" onanimationend="setTimeout(_=&gt;To(gradient,'cL').remove('opacity-0'), 60)">
 	<div id="retry" class="py-3 text-sm no-hover no-focus no-focus-within fixed tooltip -slide-y w-full text-center bg-n-black">
-	  â€¢ Success or error? You may retry with another webpage whether or not there was a snag<button class="ripple relative mt-3 ml-3 rounded rounded-tr-xl p-3 ripple bg-blue-100" onclick="page.retry()">Another?</button>
+	  • Success or error? You may retry with another webpage whether or not there was a snag<button class="ripple relative mt-3 ml-3 rounded rounded-tr-xl p-3 ripple bg-blue-100" onclick="page.retry()">Another?</button>
 	</div>
 	
         <nav style="--tw-bg-opacity:0.3" class="items-center text-sm backdrop-blur backdrop-filter z-1 [&amp;&gt;*]:relative lg:right-1/4 lg:left-1/4 sm:right-20 sm:left-20 left-0 right-0 [&amp;&gt;*]:p-2 rounded-t-3xl [&amp;&gt;*]:align-middle flex justify-around [&amp;&gt;*]:inline-block bottom-0 fixed p-1 px-3 border border-b-0 border-gray-500">
@@ -223,26 +223,26 @@ loop=_=>{
 	</nav><main class="relative text-center vh-full flex justify-around items-center flex-col">
           <!--overflow-hidden class on section below showed only the elements in .__class__ -  had to remove it- It is dangerous for elements with a auto height and shifting scroll depth due to editable children -->
           
-<canvas id="gradient" width="500" height="600" class="w-full h-full absolute duration-500 ease-out pointer-events-none is-loaded"></canvas>
+<canvas id="gradient" width="1600" height="600" class="w-full h-full absolute duration-500 ease-out pointer-events-none is-loaded"></canvas>
 <section hidden="">
             <span class="text-gray-600 mr-4">Received as:</span>
             <article class="mb-2 lg:mb-7 [&amp;&gt;*]:inline-block [&amp;&gt;*]:align-middle sm:w-96 inline-block mr-2"><code class="mr-4">[URL]:: &lt;website url&gt;</code>
-              <div class="inline-block [&amp;&gt;*]:inline-block"><img src="favicon.png" width="52" class="mr-2"><code>â€¢ [TITLE::] â€¢â€¢â€¢</code></div>
+              <div class="inline-block [&amp;&gt;*]:inline-block"><img src="favicon.png" width="52" class="mr-2"><code>• [TITLE::] •••</code></div>
             </article>
 
             <aside class="mb-5 w-full sm:w-5/6 md:w-2/3 lg:w-1/3 mt-2 absolute align-middle inline-block rounded-md bg-gradient-to-br from-gray-200 via-transparent tooltip no-hover no-focus slide-y p-4 mt-3 xl:mr-10 left-0 text-gray-700">
-              â€¢<h4 class="inline-block ml-1 mb-1">Found linked stylesheets</h4><div class="[&amp;&gt;*]:inline-block [&amp;&gt;*]:align-middle [&amp;&gt;*]:rounded-full"></div>â€¢<p class="mb-1.5 ml-1 mt-3 inline-block">checking for inline styles...</p><div class="leading-8 absolute tooltip no-hover no-focus -slide-y [&amp;&gt;*]:align-middle"></div></aside>
-            <aside class="overflow-hidden sm:w-auto w-full sm:mr-4 bg-inherit __class__ left-0 tooltip no-hover no-focus-within no-focus inline-block slide-y no-focus-within absolute"><span class="inline-block mt-2"><code>115 classes found</code><br><button class="w-full focus:bg-yellow-300 hover:bg-yellow-100 rounded-t-xl border-l border-r  border-t border-current pt-2 ripple relative mt-1 leading-8" onclick="let t, o, ctx=(o=objWalk)(t=this, [{2:'pN'},'lEC']), bool=t.textContent.charAt(0)=='s'; o(t, [{2:'pN'}, 'cL']).toggle('w-full'), ctx.textContent=bool?page.classes.join('&nbsp; â€¢ &nbsp;'):'', ctx.classList[cLs(bool)]('show'), t.textContent=(bool?'hide':(o(t,['pN','nES']).focus(), 'show'))+' selectors'">show selectors</button></span><input onkeyup="this.textContent||(event.key==='Enter'||event.keyCode===13)&amp;&amp;(page.continue(this.textContent=this.value.trim()), this.setAttribute('disabled', ''))" class="placeholder-gray-700 sm:w-80 focus:bg-blue-100 text-xs w-full mr-2 sm:mr-0 sm:inline-block sm:px-4 rounded-tr-md rounded-bl-md p-2 border-l border-b border-current text-gray-800 align-bottom sm:-mb-1 bg-transparent outline-none" spellcheck="false" placeholder="add HTML attributes in document here with spaces">
+              •<h4 class="inline-block ml-1 mb-1">Found linked stylesheets</h4><div class="[&amp;&gt;*]:inline-block [&amp;&gt;*]:align-middle [&amp;&gt;*]:rounded-full"></div>•<p class="mb-1.5 ml-1 mt-3 inline-block">checking for inline styles...</p><div class="leading-8 absolute tooltip no-hover no-focus -slide-y [&amp;&gt;*]:align-middle"></div></aside>
+            <aside class="overflow-hidden sm:w-auto w-full sm:mr-4 bg-inherit __class__ left-0 tooltip no-hover no-focus-within no-focus inline-block slide-y no-focus-within absolute"><span class="inline-block mt-2"><code>115 classes found</code><br><button class="w-full focus:bg-yellow-300 hover:bg-yellow-100 rounded-t-xl border-l border-r  border-t border-current pt-2 ripple relative mt-1 leading-8" onclick="let t, o, ctx=(o=objWalk)(t=this, [{2:'pN'},'lEC']), bool=t.textContent.charAt(0)=='s'; o(t, [{2:'pN'}, 'cL']).toggle('w-full'), ctx.textContent=bool?page.classes.join('&nbsp; • &nbsp;'):'', ctx.classList[cLs(bool)]('show'), t.textContent=(bool?'hide':(o(t,['pN','nES']).focus(), 'show'))+' selectors'">show selectors</button></span><input onkeyup="this.textContent||(event.key==='Enter'||event.keyCode===13)&amp;&amp;(page.continue(this.textContent=this.value.trim()), this.setAttribute('disabled', ''))" class="placeholder-gray-700 sm:w-80 focus:bg-blue-100 text-xs w-full mr-2 sm:mr-0 sm:inline-block sm:px-4 rounded-tr-md rounded-bl-md p-2 border-l border-b border-current text-gray-800 align-bottom sm:-mb-1 bg-transparent outline-none" spellcheck="false" placeholder="add HTML attributes in document here with spaces">
 <div class="mb-3 -mt-1 p-2 pt-3 tooltip no-hover no-focus -slide-y no-focus-within border-r-0 border-t-0 border border-current rounded-bl-xl"></div>
 </aside>
-<aside class="mt-5 bg-inherit w-full sm:w-5/6 md:w-2/3 lg:w-1/3 ml-0 sm:ml-2 m-2 absolute align-bottom inline-block rounded-lg tooltip no-hover no-focus-within no-focus slide-y p-4 mt-3 sm:mr-5 left-0 text-gray-800"><div class="rounded-inherit inset-0.5 bg-white absolute"></div><div class="border-gray-500 rounded-tl-xl p-10 border-l border-t absolute top-0 left-0 -m-1"></div><div class="border-gray-500 rounded-br-xl p-10 border-r border-b absolute bottom-0 right-0 -m-1"></div><span class="relative">â€¢</span><h4 class="relative inline-block ml-1 mb-1 text-gray-700 space-y-1.5">Found external scripts</h4><div class="overflow-hidden relative [&amp;&gt;*]:align-middle [&amp;&gt;*]:inline-block [&amp;&gt;*]:rounded-full space-y-1.5"></div><span class="relative">â€¢</span><p class="mb-1.5 ml-1 mt-3 inline-block relative">[ &lt;N&gt; ] Inline script(s) present</p><div class="leading-8 tooltip no-hover no-focus absolute -slide-y"></div></aside>
+<aside class="mt-5 bg-inherit w-full sm:w-5/6 md:w-2/3 lg:w-1/3 ml-0 sm:ml-2 m-2 absolute align-bottom inline-block rounded-lg tooltip no-hover no-focus-within no-focus slide-y p-4 mt-3 sm:mr-5 left-0 text-gray-800"><div class="rounded-inherit inset-0.5 bg-white absolute"></div><div class="border-gray-500 rounded-tl-xl p-10 border-l border-t absolute top-0 left-0 -m-1"></div><div class="border-gray-500 rounded-br-xl p-10 border-r border-b absolute bottom-0 right-0 -m-1"></div><span class="relative">•</span><h4 class="relative inline-block ml-1 mb-1 text-gray-700 space-y-1.5">Found external scripts</h4><div class="overflow-hidden relative [&amp;&gt;*]:align-middle [&amp;&gt;*]:inline-block [&amp;&gt;*]:rounded-full space-y-1.5"></div><span class="relative">•</span><p class="mb-1.5 ml-1 mt-3 inline-block relative">[ &lt;N&gt; ] Inline script(s) present</p><div class="leading-8 tooltip no-hover no-focus absolute -slide-y"></div></aside>
 <aside class="w-full bg-inherit left-0 ml-0.5 absolute tooltip no-hover no-focus-within no-focus slide-y inline-block my-3">
     <h4 class="text-gray-700 inline-block mr-3">Likely CSS selectors matched in scripts (filtered)</h4>
     <!--fancy button -->
     <div class="relative inline-block rounded align-middle"><div class="rounded-lg pointer-events-none decorate inset-0 absolute overflow-hidden"><div style="--tw-bg-opacity: 0.7" class="duration-500 origin-bottom-right -right-6 top-3/4 p-4 bg-blue-200 shadow rounded-full transform-gpu scale-150 absolute"></div><div style="--tw-bg-opacity: 0.6" class="duration-500 origin-top-left -left-6 bottom-3/4 p-4 bg-blue-300 shadow rounded-full transform-gpu scale-150 absolute"></div></div>
     <button class="px-6 relative ripple text-xs sm:text-sm p-2" onclick="let o=objWalk; page.done(o(this, ['pN', 'nES', 'tC']), o, this)">done ?</button></div>
     <!-- fancy button end -->
-    <div class="leading-6 text-xs mt-2 px-3 p-2 no-focus-within border-r-0 border-b-0 border border-current rounded-tl-xl" contenteditable="true" spellcheck="false" onkeyup="let o=objWalk; (event.key==='Enter'||event.keyCode===13)&amp;&amp;page.done(this.textContent=this.textContent.replace(/\n/, ''), o, o(this, ['pES','lEC']))">font-semibold â€¢ mb-2 â€¢ inline-block</div>
+    <div class="leading-6 text-xs mt-2 px-3 p-2 no-focus-within border-r-0 border-b-0 border border-current rounded-tl-xl" contenteditable="true" spellcheck="false" onkeyup="let o=objWalk; (event.key==='Enter'||event.keyCode===13)&amp;&amp;page.done(this.textContent=this.textContent.replace(/\n/, ''), o, o(this, ['pES','lEC']))">font-semibold • mb-2 • inline-block</div>
 </aside>
 <br>
 <div class="w-full mr-8">
@@ -353,25 +353,28 @@ loop=_=>{
 </section>
 
 <section>
-  <button class="ripple relative rounded-full duration-500 ease-out text-yellow-700 p-0 align-middle mr-2" onclick="(loop=To(this,[{2:'fEC'},'cL']).toggle('animate-spin'))&amp;&amp;rStyles()">
+  <button class="ripple relative rounded-full duration-500 ease-out text-yellow-700 p-0 align-middle mr-2" onclick="(loops[0]=null, To(this,[{2:'fEC'},'cL']).toggle('animate-spin'))&amp;&amp;rStyles">
 <div class="rounded-inherit overflow-hidden absolute inset-0 text-yellow-600 bg-blue-100"><div style="transform-origin: bottom; animation-duration: 3s; transform-origin: top right" class="top-1/2 right-1/2 inset-0 origin-center bg-gradient-to-r from-transparent via-current to-tansparent absolute animate-spin"></div></div>
     <div style="background-image: url(&quot;icons/play-pause.webp&quot;); background-size: 50% auto;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div></button>
-    <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t border-current p-1 ripple">Reading styles...<code class="ml-1 inline-block p-1.5 border-b border-current">view</code></button>
+    <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t border-current p-1 ripple">Reading styles...<code class="ml-1.5 inline-block p-1.5 border-b border-current">view</code></button>
 </section>
 
 <main style="max-width:100%" class="w-full sm:w-auto absolute bg-gray-100 right-0 top-full p-2 mt-px">
   <button onclick="To(this,['pN','cL']).add('inert')" class="absolute text-xs right-0 top-0 m-1 p-3 border border-current rounded-full">close</button>
-  <!--section for reading styles-->
-  <section id="reading">
-    <h3 class="text-sm">CSS Stylesheets</h3>
-    All styles that affect the page
-    <ol style="max-height:6rem" class="overflow-y-scroll text-left">
-      <li class="divide-x divide-current [&amp;&gt;*]:p-1 flex items-center">
-        <code class="w-full truncate">http://localhost:3000/css/page.css</code>
-        <pre class="text-right w-1/3">&lt;N&gt;&nbsp;KB</pre>
-      </li>
-    </ol>
-  </section>
+  <main>
+    <!--section for reading styles-->
+    <section id="reading">
+      <h3 class="text-sm">CSS Stylesheets</h3>
+      All styles that affect the page
+      <ol style="max-height:6rem" class="overflow-y-scroll text-left">
+        <li class="divide-x divide-current [&amp;&gt;*]:p-1 flex items-center">
+          <code class="w-full truncate">http://localhost:3000/css/page.css</code>
+          <pre class='text-right w-1/3'>&lt;N&gt;&nbsp;KB</pre>
+        </li>
+      </ol>
+    </section>
+  </main>
+  
 </main>
 </aside>
 <iframe id="frame" class="h-full w-full rounded-t-3xl" src="_index.html" style="background: none;"></iframe>
@@ -381,23 +384,23 @@ loop=_=>{
 </main>
       <script>  
  let rAF=fxn=>{
-
    requestAnimationFrame(fxn);
-
- }, loop, ready=(wdw=window, cb, doc)=>loop=_=>(doc=wdw.document||wdw.contentDocument)&&doc.readyState=='complete'&&(loop=null, cb());
+ }, loops=[], ready=(wdw=window, cb, doc)=>loops[0]=_=>(doc=wdw.document||wdw.contentDocument)&&doc.readyState=='complete'&&(loops[0]=null, cb());
 
  /*IFFY for closing over one-time vars*/
 
  (function(){
    let cb; rAF(cb=id=>{
-     let boost = Math.abs(rAF.boost||=1);
      /*Persistent ~60FPS; no need passing id since rAF loop needs to be maintained*/
-     for(; boost--;) loop?.call&&loop()
-     rAF.boost=1, rAF(cb)
+     //Object.values(loops||{})
+     loops?.forEach(loop=>{
+       let exit, boost = loop?.call ? Math.abs(loop.boost||=1) : exit=loops=[];
+       if(exit) return;
+       for(; loop?.call && boost--;) loop();
+     }), rAF(cb)
    })
  })();
 
- 
  frame.src='_index.html', begin(qS('form button'));
  function begin(btn) {
    let retry = !btn, cls=['absolute','show'];
@@ -405,11 +408,11 @@ loop=_=>{
    if(!retry) /*To(frame,['nES','cL']).remove('inert'),*/ ready(frame, _=>{
      setTimeout(_=>['p','n'].forEach((s,i)=>To(frame,[s+'ES','cL'])[cLs(i)]('inert')), 250),
      To(qS('form >label>div'),'cL').remove('inert');
-     loop=_=>{
+     loops[0]=_=>{
        let sheets = frame.contentDocument.styleSheets;
        if(sheets.length) {
-         loop=null, rStyles()
-
+         loops[0]=null, rStyles()
+         //console.log("::HTML::", qS('link[rel=stylesheet]',!0,fDoc), qS('style',!0,fDoc), fDoc.documentElement.innerHTML.length);
        }
      }
    });
@@ -433,6 +436,5 @@ window.addEventListener('DOMContentLoaded', _=>{
   animations.addRippleAnimations()
 })
 </script>
-
 
 </body></html>
