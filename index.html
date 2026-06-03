@@ -70,30 +70,31 @@ background: #282828;
 let rules = {};
 function rStyles() {
   // make a static copy of styleSheets to not worry over dynamic increase in its length
-  let i=Object.keys(rules).length, inline=[].filter.call(frame.contentDocument.styleSheets, st=>!st.href), styles=inline || [].slice.call(frame.contentDocument.styleSheets),
+  let i=Object.keys(rules).length, styles=[].slice.call(frame.contentDocument.styleSheets),
       stylesLen=styles.length, list = qS('ol',0,reading);
   To(state,'fC').data = 'Reading styles...',
   // add a list to avoid re-writing current last list if i>0, i.e. resuming from previous
-  i&&To(list,'lEC').after(To(list,'lEC').cloneNode(!0)),
+  i&&To(list,'lEC').after(To(list,'lEC').cloneNode(!0));
+console.log("::RECURSIVE::", !!loops[0]),
 // 1st phase of extraction: read cssRules and store them in `rules` with their href or key
-loop=_=>{
-  rAF.boost=4;
+loops[0]=_=>{
+  loops[0].boost=200;
   if(i==stylesLen) {
     // check if more styles have been added and continue from there on
-    //if(stylesLen!==frame.contentDocument.styleSheets.length) return console.log("::1ST:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loop=null, rStyles();
+    // if(stylesLen!==frame.contentDocument.styleSheets.length) return console.log("::1ST:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loops[0]=null, rStyles();
 				
 		let i = 0, keys=Object.keys(rules), keysLength=keys.length, j=0, lists = list.children, size=0,
 		cssRules = rules[keys[j]], rulesLen = cssRules.length, sheets=[];/*will be reset for next cssRule*/
 		// 2nd phase: filter out and store CSS style blocks only
-		loop=_=>{
-		  rAF.boost=4;
-			if(j==keysLength) /*alert("::DONE READING::"), */To(state,'fC').data=`Read styles(${keysLength})`, To(state,'pES').click(); //loop=console.log('::RULES::', styles.length, frame.contentDocument.styleSheets.length, [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), rules);
+		loops[0]=_=>{
+		  loops[0].boost=200;
+			if(j==keysLength) return alert("::DONE READING::"), loops[0]=null, To(state,'fC').data=`Read styles(${keysLength})`, To(state,'pES').click(); //loops[0]=console.log('::RULES::', styles.length, frame.contentDocument.styleSheets.length, [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), rules);
       else {
 				// reset and move on to the next cssRule
 				if(i==rulesLen) {
-				  //if(stylesLen!==frame.contentDocument.styleSheets.length) console.log("::2ND:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loop=null, rStyles();
+				  //if(stylesLen!==frame.contentDocument.styleSheets.length) console.log("::2ND:COMPARE::", [].map.call(frame.contentDocument.styleSheets, (s,i)=>s.href||i), styles.map((s,_i)=>s.href||_i)), loops[0]=null, rStyles();
 				  rules[keys[j]]=sheets, ++j, rules[keys[j]] && (rulesLen=(cssRules = rules[keys[j]]).length), size=i=0, sheets=[];
-				} else cssRules[i].constructor.name == 'CSSStyleRule' && sheets.push(cssRules[i]),
+				} else if(cssRules[i]) cssRules[i].constructor.name == 'CSSStyleRule' && sheets.push(cssRules[i]),
 						To(lists[j], {2:'lEC'}).textContent=byteFormat(size+=cssRules[i].cssText.length);
 				i++
 			}
@@ -352,25 +353,28 @@ loop=_=>{
 </section>
 
 <section>
-  <button class="ripple relative rounded-full duration-500 ease-out text-yellow-700 p-0 align-middle mr-2" onclick="(loop=To(this,[{2:'fEC'},'cL']).toggle('animate-spin'))&amp;&amp;rStyles()">
+  <button class="ripple relative rounded-full duration-500 ease-out text-yellow-700 p-0 align-middle mr-2" onclick="(loops[0]=null, To(this,[{2:'fEC'},'cL']).toggle('animate-spin'))&amp;&amp;rStyles">
 <div class="rounded-inherit overflow-hidden absolute inset-0 text-yellow-600 bg-blue-100"><div style="transform-origin: bottom; animation-duration: 3s; transform-origin: top right" class="top-1/2 right-1/2 inset-0 origin-center bg-gradient-to-r from-transparent via-current to-tansparent absolute animate-spin"></div></div>
     <div style="background-image: url(&quot;icons/play-pause.webp&quot;); background-size: 50% auto;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div></button>
-    <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t border-current p-1 ripple">Reading styles...<code class="ml-1 inline-block p-1.5 border-b border-current">view</code></button>
+    <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t border-current p-1 ripple">Reading styles...<code class="ml-1.5 inline-block p-1.5 border-b border-current">view</code></button>
 </section>
 
 <main style="max-width:100%" class="w-full sm:w-auto absolute bg-gray-100 right-0 top-full p-2 mt-px">
   <button onclick="To(this,['pN','cL']).add('inert')" class="absolute text-xs right-0 top-0 m-1 p-3 border border-current rounded-full">close</button>
-  <!--section for reading styles-->
-  <section id="reading">
-    <h3 class="text-sm">CSS Stylesheets</h3>
-    All styles that affect the page
-    <ol style="max-height:6rem" class="overflow-y-scroll text-left">
-      <li class="divide-x divide-current [&amp;&gt;*]:p-1 flex items-center">
-        <code class="w-full truncate">http://localhost:3000/css/page.css</code>
-        <pre class='text-right w-1/3'>&lt;N&gt;&nbsp;KB</pre>
-      </li>
-    </ol>
-  </section>
+  <main>
+    <!--section for reading styles-->
+    <section id="reading">
+      <h3 class="text-sm">CSS Stylesheets</h3>
+      All styles that affect the page
+      <ol style="max-height:6rem" class="overflow-y-scroll text-left">
+        <li class="divide-x divide-current [&amp;&gt;*]:p-1 flex items-center">
+          <code class="w-full truncate">http://localhost:3000/css/page.css</code>
+          <pre class='text-right w-1/3'>&lt;N&gt;&nbsp;KB</pre>
+        </li>
+      </ol>
+    </section>
+  </main>
+  
 </main>
 </aside>
 <iframe id="frame" class="h-full w-full rounded-t-3xl" src="_index.html" style="background: none;"></iframe>
@@ -380,17 +384,20 @@ loop=_=>{
 </main>
       <script>  
  let rAF=fxn=>{
-   let boost = Math.abs(rAF.boost||=1);
-   for(; boost--;) requestAnimationFrame(fxn);
-   rAF.boost=1
- }, loop, ready=(wdw=window, cb, doc)=>loop=_=>(doc=wdw.document||wdw.contentDocument)&&doc.readyState=='complete'&&(loop=null, cb());
+   requestAnimationFrame(fxn);
+ }, loops=[], ready=(wdw=window, cb, doc)=>loops[0]=_=>(doc=wdw.document||wdw.contentDocument)&&doc.readyState=='complete'&&(loops[0]=null, cb());
 
  /*IFFY for closing over one-time vars*/
 
  (function(){
    let cb; rAF(cb=id=>{
      /*Persistent ~60FPS; no need passing id since rAF loop needs to be maintained*/
-     rAF(cb), loop?.call&&loop()
+     //Object.values(loops||{})
+     loops?.forEach(loop=>{
+       let exit, boost = loop?.call ? Math.abs(loop.boost||=1) : exit=loops=[];
+       if(exit) return;
+       for(; loop?.call && boost--;) loop();
+     }), rAF(cb)
    })
  })();
 
@@ -401,10 +408,10 @@ loop=_=>{
    if(!retry) /*To(frame,['nES','cL']).remove('inert'),*/ ready(frame, _=>{
      setTimeout(_=>['p','n'].forEach((s,i)=>To(frame,[s+'ES','cL'])[cLs(i)]('inert')), 250),
      To(qS('form >label>div'),'cL').remove('inert');
-     loop=_=>{
+     loops[0]=_=>{
        let sheets = frame.contentDocument.styleSheets;
        if(sheets.length) {
-         loop=null, rStyles()
+         loops[0]=null, rStyles()
          //console.log("::HTML::", qS('link[rel=stylesheet]',!0,fDoc), qS('style',!0,fDoc), fDoc.documentElement.innerHTML.length);
        }
      }
