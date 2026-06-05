@@ -72,6 +72,16 @@ background: #282828;
 // styleStrings.replace(/\\/g,'').search(classname)
 let rules = [], unique={}, selectors=[], usedCSS=[];
   
+
+
+
+
+/*will be a fuction with synchronous modus operandi*/  
+function getUsedCSS() {
+  
+}
+  
+
 function rElems() {
   let elems = [], sec = currentSec(), attrs=qS('div>input',0,sec).value.split(/,\s+/),
       sels=qS('ul>li>*',!0,sec).filter(el=>To(el,'cL').contains('bg-blue-100')).map(el=>el.textContent||el.value);
@@ -86,7 +96,7 @@ function rElems() {
     [].forEach.call(elem.attributes, attr=>{
       attrs.filter(str=>~attr.name.search(str.trim())).length
       && attr.value.split(/\s+/).forEach(val=>{
-        val && (unique[val] ||= incr=selectors.push(val))
+        val && (unique[val] ||= (/*set usedCSS here*/getUsedCSS(), incr=selectors.push(val)))
       })
     }), ++i
   }
@@ -115,7 +125,7 @@ loops[0]=_=>{
 				// reset inner loop counters and state, and move on to the next cssRule
 				if(i>=rulesLen) {
 					rules[/*keys[*/j/*]*/] = sheets, ++j, rules[/*keys[*/j/*]*/] && (rulesLen=(cssRules = rules[/*keys[*/j/*]*/]).length), size=i=0, sheets=[];
-				} else  cssRules[i] && cssRules[i].constructor.name == 'CSSStyleRule' && sheets.push(cssRules[i]),
+				} else  /*cssRules[i] && cssRules[i].constructor.name == 'CSSStyleRule' && */ sheets.push(cssRules[i]),
 						To(lists[j], {2:'lEC'}).textContent=byteFormat(size+=cssRules[i]?.cssText.length||0);
 				i++
 			}
@@ -246,7 +256,7 @@ loops[0]=_=>{
 	</nav><main class="relative text-center vh-full flex justify-around items-center flex-col">
           <!--overflow-hidden class on section below showed only the elements in .__class__ -  had to remove it- It is dangerous for elements with a auto height and shifting scroll depth due to editable children -->
           
-<canvas id="gradient" width="1600" height="600" class="w-full h-full absolute duration-500 ease-out pointer-events-none is-loaded"></canvas>
+<canvas id="gradient" width="798" height="600" class="w-full h-full absolute duration-500 ease-out pointer-events-none is-loaded"></canvas>
 
 <section class="relative w-full sm:w-auto px-4">
 
@@ -298,76 +308,188 @@ loops[0]=_=>{
     </div>
     <div style="background-image: url(icons/play-pause.webp); background-size: 50% auto;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div>
   </button>
-  <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t text-xs border-current p-1 ripple">Waiting...<code class="inline-block p-1 py-2 border-b border-current">view</code>
+  <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t text-xs border-current p-1 ripple">Read selectors (0)<code class="inline-block p-1 py-2 border-b border-current">view</code>
   </button>
 </section>
 
 <main style="max-width:100%" class="w-full absolute bg-gray-100 right-0 top-full mt-px">
   <button onclick="To(this,['pN','cL']).add('inert')" class="z-1 absolute text-xs right-0 top-0 m-1 p-2.5 border border-current rounded-3xl">close</button>
-  <main class="p-2 relative">
+  <main class="p-2 relative overflow-hidden">
     <!--section for reading styles-->
-    <section class="inset-0 tooltip no-hover no-focus -slide-y show">
-      <h3 class="text-sm font-semibold opacity-70">CSS Stylesheets</h3>
+    <section class="inset-0 tooltip no-hover no-focus slide absolute">
+      <h3 class="text-sm font-semibold 
+
+opacity-70">CSS Stylesheets</h3>
       <p class="text-sm">Extract all styles that affect the page</p>
-      <ol style="max-height:6rem" class="overflow-y-scroll text-left my-1 [&amp;&gt;*]:relative">
+      <ol style="max-height:6rem" class="overflow-y-scroll text-left my-1 
+
+[&amp;&gt;*]:relative">
         <li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center nbg-yellow-200 rounded-full overflow-hidden">
-          <code class="w-full truncate relative z-1">Inline stylesheets or external assests</code>
+          <code class="w-full truncate relative 
+
+z-1">http://localhost:3000/css/tailwind.min.css</code>
           
-<hr class="border-0 transform bg-green-200 h-full absolute inset-0 -left-2 -right-2" style="--tw-bg-opacity: 0.7; --tw-translate-x: -100%;">
-<pre class="text-right relative z-1" style="width:43%;">&lt;N&gt;</pre>
+
+<pre class="text-right relative z-1" style="width:42%;">3.10 MB</pre>
+        </li><li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center nbg-yellow-200 rounded-full overflow-hidden">
+          <code class="w-full truncate relative 
+
+z-1">http://localhost:3000/css/all.min.css</code>
+          
+
+<pre class="text-right relative z-1" style="width:42%;">59.56 KB</pre>
+        </li><li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center nbg-yellow-200 rounded-full overflow-hidden">
+          <code class="w-full truncate relative 
+
+z-1">http://localhost:3000/css/page.css</code>
+          
+
+<pre class="text-right relative z-1" style="width:42%;">17.30 KB</pre>
+        </li><li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center nbg-yellow-200 rounded-full overflow-hidden">
+          <code class="w-full truncate relative 
+
+z-1">Inline stylesheet</code>
+          
+
+<pre class="text-right relative z-1" style="width:42%;">1.32 KB</pre>
+        </li><li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center nbg-yellow-200 rounded-full overflow-hidden">
+          <code class="w-full truncate relative 
+
+z-1">Inline stylesheet</code>
+          
+
+<pre class="text-right relative z-1" style="width:42%;">485 bytes</pre>
+        </li><li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center nbg-yellow-200 rounded-full overflow-hidden">
+          <code class="w-full truncate relative 
+
+z-1">Inline stylesheet</code>
+          
+
+<pre class="text-right relative z-1" style="width:42%;">151 bytes</pre>
+        </li><li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center nbg-yellow-200 rounded-full overflow-hidden">
+          <code class="w-full truncate relative 
+
+z-1">Inline stylesheet</code>
+          
+
+<pre class="text-right relative z-1" style="width:42%;">1.32 KB</pre>
+        </li><li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center nbg-yellow-200 rounded-full overflow-hidden">
+          <code class="w-full truncate relative 
+
+z-1">Inline stylesheet</code>
+          
+
+<pre class="text-right relative z-1" style="width:42%;">447 bytes</pre>
         </li>
       </ol>
 <div>
-<button class="border-b border-current mr-1" onclick="To(this,[{3:'pN'},'nES','fEC','nES']).click()">Go to next section</button>
-  <span class="bulge-center font-mono text-gray-700 inline-flex relative mx-5 my-0 h-9 w-px items-center justify-center"><span class="px-1.5 text-xs text-black bg-gray-100">or</span></span>
-  quicken by<input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-middle placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current">times
+<button class="border-b border-current 
+
+mr-1" onclick="To(this,[{3:'pN'},'nES','fEC','nES']).click()">Go to next section</button>
+  <span class="bulge-center font-mono text-gray-700 inline-flex relative mx-5 my-0 h-9 w-px items-center 
+
+justify-center"><span class="px-1.5 text-xs text-black bg-gray-100">or</span></span>
+  quicken by<input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-middle placeholder-
+
+gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current">times
   </div>
     </section>
     <!--section for listing and matching classnames with styles-->
-    <section class="inset-0 tooltip no-hover no-focus -slide-y absolute">
+    <section class="inset-0 tooltip no-hover no-focus slide show">
       <h3 class="text-sm font-semibold opacity-70">Detection of Used Styles</h3>
-      <p class="text-sm mb-2.5">Read webpage to detect used styles</p>
-      <main>
+      <p class="text-sm mb-2.5">Trims out styles with no 
+
+matching selector</p>
+      <article>
         <h4 class="truncate font-mono mb-1">[webpage title]</h4>
-        <article class="relative flex items-center">
-          <div class="bg-gray-100 inset-0 sm:relative absolute mr-2 w-full">
+        <main class="relative flex items-center">
+          <div class="bg-gray-100 inset-0 
+
+sm:relative absolute mr-2 w-full">
             <p class="sm:relative absolute font-semibold opacity-0 sm:opacity-50">Webpage Document</p>
-            <aside class="opacity-5 sm:opacity-70 space-y-3 rounded-lg p-2">
+            <aside class="opacity-5 sm:opacity-70 space-y-3 
+
+rounded-lg p-2">
               <hr class="border-current w-1/2">
               <hr class="w-3/4 border-current">
               <hr class="border-current">
               <hr class="border-current">
-            </aside>
+     
+
+       </aside>
             <div class="border sm:block inline-block border-current relative">
               <button class="border-b border-current ">•choose&nbsp;elements</button>
-              <ul onclick="let t=event.target, html, end; /button|input/i.test(t.tagName) &amp;&amp; To(t,'cL').toggle('bg-blue-100'), end=(html=qS('.bg-blue-100',!0,this).filter(el=&gt;el.textContent||el.value).map((chsn,i,a,txts,txt)=&gt;(txt=(txts=(chsn.textContent||chsn.value).replace(/\s+/g,'').split('*')).shift(), `${' and'.repeat(a.length&gt;1&amp;&amp;!a[i+1])} ${txts.map(tx=&gt;'all elements in').join(' ')} &lt;code class='bg-gray-200 shadow'&gt;${txt}&lt;/code&gt;`))).pop(), To(this,[{2:'pN'},'nES']).innerHTML = To(this,[{2:'pN'},'nES']).innerHTML.replace(/&lt;code[^]+$/, html.join(', ')+end), `<code class='bg-gray-200 shadow'></code>`, console.log('::SEE::', html, end)" class="rounded-xl bottom-full to-top bg-white absolute tooltip divide-y divide-current">
+              <ul onclick="let t=event.target, html, end; /button|input/i.test(t.tagName) &amp;&amp; To(t,'cL').toggle('bg-blue-100'), end=(html=qS('.bg-blue-100',!0,this).filter(el=&gt;el.textContent||
+
+el.value).map((chsn,i,a,txts,txt)=&gt;(txt=(txts=(chsn.textContent||chsn.value).replace(/\s+/g,'').split('*')).shift(), `${' and'.repeat(a.length&gt;1&amp;&amp;!a[i+1])} ${txts.map(tx=&gt;'all 
+
+elements in').join(' ')} &lt;code class='bg-gray-200 shadow'&gt;${txt}&lt;/code&gt;`))).pop(), To(this,[{2:'pN'},'nES']).innerHTML = To(this,[{2:'pN'},'nES']).innerHTML.replace(/&lt;code[^]+$/, 
+
+html.join(', ')+end), `&lt;code class='bg-gray-200 shadow'&gt;&lt;/code&gt;`, console.log('::SEE::', html, end)" class="rounded-xl bottom-full to-top bg-white absolute tooltip divide-y divide-
+
+current">
                 <li><button class="rounded-t-xl w-full p-1 bg-blue-100">html</button></li>
                 <li><button class="w-full p-1 bg-blue-100">body</button></li>
-                <li><button class="w-full p-1 bg-blue-100">body *</button></li>
-                <li><input oninput="setTimeout(_=>To(this,'pN').click(),250)" class="rounded-b-xl text-center w-32 border border-current p-1" placeholder="custom selector"></li>
+                
+
+<li><button class="w-full p-1 bg-blue-100">body *</button></li>
+                <li><input oninput="setTimeout(_=&gt;To(this,'pN').click(),250)" class="rounded-b-xl text-center w-32 border border-
+
+current p-1" placeholder="custom selector"></li>
               </ul>
             </div>
           </div>
           <div class="relative text-left [&amp;&gt;*]:inline-block [&amp;&gt;*]:p-1">
-            Reads <kbd>attributes</kbd> that contain
+           
+
+ Reads <kbd>attributes</kbd> that contain
             <input value="class, id" class="w-1/4 border-b border-current">
-            for <strong class="opacity-70">elements:</strong> <code class="bg-gray-200 shadow">html</code>, <code class="bg-gray-200 shadow">body</code> and all elements in <code class="bg-gray-200 shadow">body</code>
+            for <strong class="opacity-70">elements:</strong> <code class="bg-
+
+gray-200 shadow">html</code>, <code class="bg-gray-200 shadow">body</code> and all elements in <code class="bg-gray-200 shadow">body</code>
           </div>
-        </article>
-      </main>
+        </main>
+      </article>
       <div class="sm:mt-3 mt-8">
         Speed up this operation by <input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-middle placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current">times
       </div>
     </section>
     <!--section for applying pruned to pages -->
-    <section class="tooltip no-hover no-focus -slide-y inset-0 absolute">
-      <h3 class="text-sm font-semibold opacity-70">Preview of Pruned Styles</h3>
-      <p class="text-sm">Apply pruned styles to page to check its validity</p>
+    <section class="tooltip no-hover no-focus slide inset-0 absolute">
+      
+
+<h3 class="text-sm font-semibold opacity-70">Preview of Pruned Styles</h3>
+      <p class="text-sm">Preview effects of trimed styles for validity</p>
+<header class="flex justify-between mt-2">
+<div class="text-left">
+<h4 class="text-sm">Used styles</h4>Click each to toggle its preview </div><button class="border border-current ripple relative" onclick="To(qS('main&gt;article'),'cL').add
+
+('show')">expand</button>
+
+
+
+</header>
+
+<ol style="max-height:6rem" class="overflow-y-scroll text-left [&amp;&gt;*]:relative mt-1">
+        <li><button class="divide-x divide-current [&amp;&gt;*]:p-2 
+
+flex items-center bg-yellow-200 rounded-full overflow-hidden w-full">
+          <code class="w-full truncate relative z-1">Inline stylesheets or external CSS</code>
+          
+<hr class="border-0 
+
+transform bg-green-200 h-full absolute inset-0 -left-2 -right-2" style="--tw-bg-opacity: 0.7; --tw-translate-x: -100%;">
+<pre class="text-right relative z-1" style="width:43%;">&lt;N&gt;</pre>
+      
+
+  </button></li>
+      </ol>
+
     </section>
   </main>
   <aside class="[&amp;&gt;*]:relative mt-2 divide-x divide-current flex justify-around bg-white [&amp;&gt;*]:p-2 rounded-inherit" onclick="let main=To(this,'pES'), sec=qS('.show',0,main), secs=main.children, hr=qS('.border-current',0,this), t=event.target, cls=['absolute', 'show'], i=[].indexOf.call(this.children, t); if(t.tagName!=='BUTTON') return; sec!=secs[i] &amp;&amp; [sec, secs[i]].forEach(s=&gt;cls.forEach(cl=&gt;To(s,'cL').toggle(cl))), [hr, qS('hr',0,t)].forEach(hr=&gt;To(hr,'cL').toggle('border-current'))">
-    <button class="ripple flex-1"><p>extract styles</p><hr class="p-0.5 border-4 inline-block rounded-full border-current"></button>
-    <button class="ripple flex-1"><p>read webpage</p><hr class="p-0.5 border-4 inline-block rounded-full"></button>
+    <button class="ripple flex-1"><p>extract styles</p><hr class="p-0.5 border-4 inline-block rounded-full"></button>
+    <button class="ripple flex-1"><p>read webpage</p><hr class="p-0.5 border-4 inline-block rounded-full border-current"></button>
     <button class="ripple flex-1"><p>visualize</p><hr class="p-0.5 border-4 inline-block rounded-full"></button>
   </aside>
 </main>
@@ -376,6 +498,8 @@ loops[0]=_=>{
 <aside class="absolute rounded-3xl bg-white p-5 text-black duration-300 text-left inert"><h3 class="text-lg font-semibold opacity-70">Proxying Webpage And Its Assets</h3><p>Takes a little longer than direct visits...</p>
 </aside>
 </section>
+
+<article class="absolute inset-0 bg-white z-1 tooltip -slide-y no-hover no-focus no-focus-within"></article>
 </main>
       <script>  
  let rAF=fxn=>{
