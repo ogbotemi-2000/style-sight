@@ -70,22 +70,25 @@ background: #282828;
 <script>
 
 // styleStrings.replace(/\\/g,'').search(classname)
-let rules = []||{}, selectors=[], usedCSS=[];
-
+let rules = [], unique={}, selectors=[], usedCSS=[];
   
 function rElems() {
-  let elems = [], sec = currentSec(), attrs=qS('div>input',0,sec).value,
+  let elems = [], sec = currentSec(), attrs=qS('div>input',0,sec).value.split(/,\s+/),
       sels=qS('ul>li>*',!0,sec).filter(el=>To(el,'cL').contains('bg-blue-100')).map(el=>el.textContent||el.value);
-
   sels.forEach(sel=>elems=elems.concat(qS(sel, /\*/.test(sel), frame.contentDocument)));
   // console.log("::SELECTORS::", sels, attrs, elems.length)
-  let eLen = elems.length, i=0, unique={}, incr=0;
+  let eLen = elems.length, i=0, incr=0;
   loops[1]=_=>{
-    if(i==eLen) return loop=null;
-    let elem = elems[i++];
-    [].forEach.call(elem.attributes, attr=>~attrs.search(attr.name) && attr.value.split(/\s+/).forEach(val=>{
-      val && (unique[val] ||= incr=selectors.push(val))
-    }))
+    // at high invocation multipliers, some loops are called after the loop has ended
+    if(!loops[1]) return loops[1] = null;
+    if(i>=eLen) return loops[1]=null, console.log("::SELECTORS::", selectors);
+    let elem = elems[i];
+    [].forEach.call(elem.attributes, attr=>{
+      attrs.filter(str=>~attr.name.search(str.trim())).length
+      && attr.value.split(/\s+/).forEach(val=>{
+        val && (unique[val] ||= incr=selectors.push(val))
+      })
+    }), ++i
   }
 }
 
@@ -93,8 +96,8 @@ function rElems() {
 function rStyles() {
   // make a static copy of styleSheets to not worry over dynamic increase in its length
   let at=Object.keys(rules).length, Styles = frame.contentDocument.styleSheets, half=Styles.length/2|0,
-      styles=[].slice.call(Styles, at, at+half), // take half slices to prevent glitches in loop state
-      stylesLen=styles.length, sec=currentSec() || qS('section',0,To(state, ['pN','nES'])), list = qS('ol',0,sec), i = 0;
+      styles=[].slice.call(Styles, at, /* Infinity || */at+half), // take half slices to prevent glitches in loop state
+      stylesLen=styles.length, sec=/*currentSec() ||*/ qS('section',0,To(state, ['pN','nES'])), list = qS('ol',0,sec), i = 0;
 	
   // add a list to avoid re-writing current last list if i>0, i.e. resuming from previous
   at&&To(list,'lEC').after(To(list,'lEC').cloneNode(!0));
@@ -102,16 +105,16 @@ function rStyles() {
 loops[0]=_=>{
   if(i==stylesLen) {
     // using [].map over Object.keys to get the right order of keys without any intrinsic sorting which is done by the latter
-		let i = 0, keys=[].map.call(rules, (s,i)=>s.href||i) || Object.keys(rules), keysLength=keys.length, j=0, lists = list.children, size=0,
-		cssRules = rules[keys[j]], rulesLen = cssRules.length, sheets=[];/*will be reset for next cssRule*/
+		let i = 0, keys=[].map.call(rules, (s,i)=>s.href||i) || Object.keys(rules), keysLength=(rules||keys).length, j=at, lists = list.children, size=0,
+		cssRules = rules[/*keys[*/j/*]*/], rulesLen = cssRules.length, sheets=[];/*will be reset for next cssRule*/
 		// 2nd phase: filter out and store CSS style blocks only
 		return loops[0]=_=>{
 			if(!loops[0]?.call) return; //exit because invocations of loops[0] above are still called after everything is done and loops[0] is set to null
-			if(j==keysLength) loops[0]=null, console.log('DONE::RULES', at, [].map.call(frame.contentDocument.styleSheets, (s,i)=>i), keys), To(state,'pES').click();
+			if(j>=keysLength) loops[0]=null, console.log('DONE::RULES', at, [].map.call(frame.contentDocument.styleSheets, (s,i)=>i), keys);
       else {
 				// reset inner loop counters and state, and move on to the next cssRule
-				if(i==rulesLen) {
-					rules[keys[j]] = sheets, ++j, rules[keys[j]] && (rulesLen=(cssRules = rules[keys[j]]).length), size=i=0, sheets=[];
+				if(i>=rulesLen) {
+					rules[/*keys[*/j/*]*/] = sheets, ++j, rules[/*keys[*/j/*]*/] && (rulesLen=(cssRules = rules[/*keys[*/j/*]*/]).length), size=i=0, sheets=[];
 				} else  cssRules[i] && cssRules[i].constructor.name == 'CSSStyleRule' && sheets.push(cssRules[i]),
 						To(lists[j], {2:'lEC'}).textContent=byteFormat(size+=cssRules[i]?.cssText.length||0);
 				i++
@@ -270,7 +273,7 @@ loops[0]=_=>{
 <aside class="absolute top-0 w-full sm:w-auto [&amp;&gt;*]:inline-block [&amp;&gt;*]:rounded-inherit rounded-2xl p-1 flex justify-around bg-white items-center text-black text-xs duration-300 sm:p-3 sm:space-x-10 sm:px-4">
 
 <section class="[&amp;&gt;*]:inline-block relative">
-  <span><strong class="text-xl">*</strong><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" class="inline-block" width="40">
+  <span><strong class="text-xl">*</strong><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" class="inline-block" width="30">
   <!-- Paint Drip -->
   <path d="M14 11v4c0 1.5-1.5 2.5-3 2.5S8 16.5 8 15v-4" fill="currentColor" opacity="0.15"></path>
   
@@ -295,11 +298,11 @@ loops[0]=_=>{
     </div>
     <div style="background-image: url(icons/play-pause.webp); background-size: 50% auto;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div>
   </button>
-  <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t border-current p-1 ripple">Read styles (0)<code class="inline-block p-1 py-2 border-b border-current">view</code>
+  <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t text-xs border-current p-1 ripple">Waiting...<code class="inline-block p-1 py-2 border-b border-current">view</code>
   </button>
 </section>
 
-<main style="max-width:100%" class="w-full absolute bg-gray-100 right-0 top-full mt-px inert">
+<main style="max-width:100%" class="w-full absolute bg-gray-100 right-0 top-full mt-px">
   <button onclick="To(this,['pN','cL']).add('inert')" class="z-1 absolute text-xs right-0 top-0 m-1 p-2.5 border border-current rounded-3xl">close</button>
   <main class="p-2 relative">
     <!--section for reading styles-->
@@ -337,18 +340,18 @@ loops[0]=_=>{
             </aside>
             <div class="border sm:block inline-block border-current relative">
               <button class="border-b border-current ">•choose&nbsp;elements</button>
-              <ul onclick="let t=event.target, html, end; /button|input/i.test(t.tagName) &amp;&amp; To(t,'cL').toggle('bg-blue-100'), end=(html=qS('.bg-blue-100',!0,this).filter(el=&gt;el.textContent||el.value).map((chsn,i,a,txts,txt)=&gt;(txt=(txts=(chsn.textContent||chsn.value).replace(/\s+/g,'').split('*')).shift(), `${' and'.repeat(a.length&gt;1&amp;&amp;!a[i+1])} ${txts.map(tx=&gt;'all elements in').join(' ')} &lt;code class='bg-gray-200 shadow'&gt;${txt}&lt;/code&gt;`))).pop(), To(this,[{2:'pN'},'nES']).innerHTML = To(this,[{2:'pN'},'nES']).innerHTML.replace(/&lt;code[^]+$/, html.join(', ')+end)" class="rounded-xl bottom-full to-top bg-white absolute tooltip divide-y divide-current">
+              <ul onclick="let t=event.target, html, end; /button|input/i.test(t.tagName) &amp;&amp; To(t,'cL').toggle('bg-blue-100'), end=(html=qS('.bg-blue-100',!0,this).filter(el=&gt;el.textContent||el.value).map((chsn,i,a,txts,txt)=&gt;(txt=(txts=(chsn.textContent||chsn.value).replace(/\s+/g,'').split('*')).shift(), `${' and'.repeat(a.length&gt;1&amp;&amp;!a[i+1])} ${txts.map(tx=&gt;'all elements in').join(' ')} &lt;code class='bg-gray-200 shadow'&gt;${txt}&lt;/code&gt;`))).pop(), To(this,[{2:'pN'},'nES']).innerHTML = To(this,[{2:'pN'},'nES']).innerHTML.replace(/&lt;code[^]+$/, html.join(', ')+end), `<code class='bg-gray-200 shadow'></code>`, console.log('::SEE::', html, end)" class="rounded-xl bottom-full to-top bg-white absolute tooltip divide-y divide-current">
                 <li><button class="rounded-t-xl w-full p-1 bg-blue-100">html</button></li>
                 <li><button class="w-full p-1 bg-blue-100">body</button></li>
                 <li><button class="w-full p-1 bg-blue-100">body *</button></li>
-                <li><input oninput="setTimeout(_=&gt;To(this,'pN').click(),250)" class="rounded-b-xl text-center w-32 border border-current p-1" placeholder="custom selector"></li>
+                <li><input oninput="setTimeout(_=>To(this,'pN').click(),250)" class="rounded-b-xl text-center w-32 border border-current p-1" placeholder="custom selector"></li>
               </ul>
             </div>
           </div>
           <div class="relative text-left [&amp;&gt;*]:inline-block [&amp;&gt;*]:p-1">
             Reads <kbd>attributes</kbd> that contain
             <input value="class, id" class="w-1/4 border-b border-current">
-            for <strong class="opacity-70">elements</strong> <code class="bg-gray-200 shadow">html</code>, <code class="bg-gray-200 shadow">body</code> and all elements in <code class="bg-gray-200 shadow">body</code>
+            for <strong class="opacity-70">elements:</strong> <code class="bg-gray-200 shadow">html</code>, <code class="bg-gray-200 shadow">body</code> and all elements in <code class="bg-gray-200 shadow">body</code>
           </div>
         </article>
       </main>
@@ -430,12 +433,14 @@ window.addEventListener('DOMContentLoaded', _=>{
   let secs = qS('main>section',!0,To(state, ['pN','nES'])), spin=To(state,['pES',{2:'fEC'}]),
       sTxt = To(state,'fC');
   
-  sTxt = 'Waiting...',
+  sTxt.data = 'Waiting...',
   loops[3] =_=>{
     // condition to ensure styles are sliced and read until end
-    // if(frameDOMReady && !loops[0]?.call && Object.keys(rules).length < frame.contentDocument.styleSheets.length)  console.log("::REDO::", rules, frame.contentDocument.styleSheets.length), rStyles();
+    if(frameDOMReady && !loops[0]?.call && Object.keys(rules).length < frame.contentDocument.styleSheets.length)  rStyles();
+    
     let idx = secs.findIndex(sec=>To(sec,'cL').contains('show')), time=3,
-        boost=Math.min(loops[idx]?.boost||1, 30), tasks=['styles', 'selectors', 'usedCSS'], vars=[rules, selectors, usedCSS], result = Object.keys(vars[idx]).length;
+        boost=Math.min(loops[idx]?.boost||1, 30), tasks=['styles', 'selectors', 'used CSS'], vars=[rules, selectors, usedCSS], result = Object.keys(vars[idx]).length;
+    // console.log("::IDX::", idx),
     // persistent code to check and update state via text
     sTxt.data = `Read${'ing'.repeat(!!loops[idx])} ${tasks[idx]}${(loops[idx]&&!result)?'...':' ('+result+')'}`,
     spin.style.setProperty('animation-duration', `${loops[idx] ? 3-(boost>1 ? boost/11 : 0) : 0}s`),
