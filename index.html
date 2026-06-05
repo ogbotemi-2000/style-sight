@@ -72,17 +72,27 @@ background: #282828;
 // styleStrings.replace(/\\/g,'').search(classname)
 let rules = {}, elements=[];
 // handle all that deal with telling users state via text
-function statusText(i) {
-  let time=3, boost=Math.min(loops[i]?.boost||1, 30), tasks=['styles', 'elements'], vars=[rules, elements], result = Object.keys(vars[i]).length;
-  To(state,['pES',{2:'fEC'}]).style.setProperty('animation-duration', `${loops[i] ? 3-(boost>1 ? boost/11 : 0) : 0}s`),
-  To(state,'fC').data = `Read${'ing'.repeat(!!loops[i])} ${tasks[i]}${(loops[i]&&!result)?'...':' ('+result+')'}`
+function rElems() {
+  let elems = [], sec = currentSec(), attrs=qS('div>input',0,sec).value,
+      sels=qS('ul>li>*',!0,sec).filter(el=>To(el,'cL').contains('bg-blue-100')).map(el=>el.textContent||el.value);
+
+  sels.forEach(sel=>elems=elems.concat(qS(sel, /\*/.test(sel), frame.contentDocument)));
+  // console.log("::SELECTORS::", sels, attrs, elems.length)
+  let eLen = elems.length, i=0, unique={}, incr=0;
+  loops[1]=_=>{
+    if(i==eLen) return loop=null;
+    let elem = elems[i++];
+    [].forEach.call(elem.attributes, attr=>~attrs.search(attr.name) && attr.value.split(/\s+/).forEach(val=>{
+      val && (unique[val] ||= (++incr, val))
+    }))
+  }
 }
 
-function rStyles(invoke) {
+function rStyles() {
   // make a static copy of styleSheets to not worry over dynamic increase in its length
   let at=Object.keys(rules).length, Styles = frame.contentDocument.styleSheets, half=Styles.length/2|0,
       styles=[].slice.call(Styles, at, at+half), // take half slices to prevent glitches in loop state
-      stylesLen=styles.length, sec=qS('section',0,To(state, ['pN','nES'])), list = qS('ol',0,sec), i = 0;
+      stylesLen=styles.length, sec=currentSec() || qS('section',0,To(state, ['pN','nES'])), list = qS('ol',0,sec), i = 0;
 	
   // add a list to avoid re-writing current last list if i>0, i.e. resuming from previous
   at&&To(list,'lEC').after(To(list,'lEC').cloneNode(!0));
@@ -94,13 +104,13 @@ loops[0]=_=>{
 		// 2nd phase: filter out and store CSS style blocks only
 		return loops[0]=_=>{
 			if(!loops[0]?.call) return; //exit because invocations of loops[0] above are still called after everything is done and loops[0] is set to null
-			if(j==keysLength) loops[0]=null, console.log('DONE::RULES', at, [].map.call(frame.contentDocument.styleSheets, (s,i)=>i), keys), To(state,'pES').click(), rStyles();
+			if(j==keysLength) loops[0]=null, console.log('DONE::RULES', at, [].map.call(frame.contentDocument.styleSheets, (s,i)=>i), keys), To(state,'pES').click();
       else {
 				// reset inner loop counters and state, and move on to the next cssRule
 				if(i==rulesLen) {
 					rules[keys[j]] = sheets, ++j, rules[keys[j]] && (rulesLen=(cssRules = rules[keys[j]]).length), size=i=0, sheets=[];
-				} else if(cssRules[i]) cssRules[i].constructor.name == 'CSSStyleRule' && sheets.push(cssRules[i]),
-						To(lists[j], {2:'lEC'}).textContent=byteFormat(size+=cssRules[i].cssText.length);
+				} else  cssRules[i] && cssRules[i].constructor.name == 'CSSStyleRule' && sheets.push(cssRules[i]),
+						To(lists[j], {2:'lEC'}).textContent=byteFormat(size+=cssRules[i]?.cssText.length||0);
 				i++
 			}
 	  }
@@ -276,31 +286,31 @@ loops[0]=_=>{
 </section>
 
 <section>
-  <button class="ripple relative rounded-full duration-500 ease-out text-yellow-700 p-0 align-middle mr-px" onclick="let i=qS('main>section',!0,To(state, ['pN','nES'])).findIndex(sec=>To(sec,'cL').contains('show')); (loops[i]=null, To(this,[{2:'fEC'},'cL']).toggle('animate-spin'))&amp;&amp;rStyles()">
+  <button class="ripple relative rounded-full duration-500 ease-out text-yellow-700 p-0 align-middle mr-px" onclick="if(!currentIdx) return; let fxns=[rStyles, rElems], idx=currentIdx(); (loops[idx]=null, To(this,[{2:'fEC'},'cL']).toggle('animate-spin'))&amp;&amp;fxns[idx]()">
     <div class="rounded-inherit overflow-hidden absolute inset-0 text-yellow-600 bg-blue-100">
       <div style="animation-duration: 3s; transform-origin: top right" class="top-1/2 right-1/2 inset-0 origin-center bg-gradient-to-r from-transparent via-current to-tansparent absolute animate-spin"></div>
     </div>
-    <div style="background-image: url(&quot;icons/play-pause.webp&quot;); background-size: 50% auto;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div>
+    <div style="background-image: url(icons/play-pause.webp); background-size: 50% auto;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div>
   </button>
   <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t border-current p-1 ripple">
-    Reading styles...
+    Waiting...
     <code class="inline-block p-1 py-2 border-b border-current">view</code>
   </button>
 </section>
 
 <main style="max-width:100%" class="w-full absolute bg-gray-100 right-0 top-full mt-px">
   <button onclick="To(this,['pN','cL']).add('inert')" class="z-1 absolute text-xs right-0 top-0 m-1 p-2.5 border border-current rounded-3xl">close</button>
-  <main class="p-2.5 relative">
+  <main class="p-2 relative">
     <!--section for reading styles-->
     <section class='inset-0 tooltip no-hover no-focus -slide-y show'>
       <h3 class="text-sm font-semibold opacity-70">CSS Stylesheets</h3>
       <p class="text-sm">Extract all styles that affect the page</p>
       <ol style="max-height:6rem" class="overflow-y-scroll text-left my-1 [&amp;&gt;*]:relative">
         <li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center nbg-yellow-200 rounded-full overflow-hidden">
-          <code class="w-full truncate relative z-1">http://localhost:3000/css/all.min.css</code>
+          <code class="w-full truncate relative z-1">Inline stylesheets or external assests</code>
           
 <hr class="border-0 transform bg-green-200 h-full absolute inset-0 -left-2 -right-2" style="--tw-bg-opacity: 0.7; --tw-translate-x: -100%;">
-<pre class="text-right relative z-1" style="width:41%;">59.69 KB</pre>
+<pre class="text-right relative z-1" style="width:43%;">&lt;N&gt;</pre>
         </li>
       </ol>
 <div>
@@ -315,18 +325,18 @@ loops[0]=_=>{
       <p class="text-sm mb-2.5">Read webpage to detect used styles</p>
       <main>
         <h4 class="truncate font-mono mb-1">[webpage title]</h4>
-        <article class='flex items-center'>
-          <div class="mr-2 w-full flex flex-col justify-between">
-            <p class='font-semibold opacity-50'>Webpage Document</p>
-            <aside class='space-y-2 rounded-lg p-2'>
+        <article class='relative flex items-center'>
+          <div class="bg-gray-100 inset-0 sm:relative absolute mr-2 w-full">
+            <p class='sm:relative absolute font-semibold opacity-0 sm:opacity-50'>Webpage Document</p>
+            <aside class='opacity-10 sm:opacity-70 space-y-2 rounded-lg p-2'>
               <hr class='border-current w-1/2'>
               <hr class='w-3/4 border-current'>
               <hr class='border-current'>
               <hr class='border-current'>
             </aside>
-            <div class='relative'>
-              <button class="border-b border-current ">•choose&nbsp;elements</button>
-              <ul onclick="let t=event.target, html, end; /button|input/i.test(t.tagName) && To(t,'cL').toggle('bg-blue-100'), end=(html=qS('.bg-blue-100',!0,this).filter(el=>el.textContent||el.value).map((chsn,i,a,txts,txt)=>(txt=(txts=(chsn.textContent||chsn.value).replace(/\s+/g,'').split('*')).shift(), `${' and'.repeat(a.length>1&&!a[i+1])} ${txts.map(tx=>'all elements in').join(' ')} <code class='bg-gray-200 shadow'>${txt}</code>`))).pop(), To(this,[{2:'pN'},'nES']).innerHTML = To(this,[{2:'pN'},'nES']).innerHTML.replace(/<code[^]+$/, html.join(', ')+end)" class='rounded-xl bottom-full bg-white absolute tooltip divide-y divide-current'>
+            <div class='mt-1.5 border inline-block border-current sm:mt-0 relative'>
+              <button class="border-b border-current ">•select&nbsp;elements</button>
+              <ul onclick="let t=event.target, html, end; /button|input/i.test(t.tagName) && To(t,'cL').toggle('bg-blue-100'), end=(html=qS('.bg-blue-100',!0,this).filter(el=>el.textContent||el.value).map((chsn,i,a,txts,txt)=>(txt=(txts=(chsn.textContent||chsn.value).replace(/\s+/g,'').split('*')).shift(), `${' and'.repeat(a.length>1&&!a[i+1])} ${txts.map(tx=>'all elements in').join(' ')} <code class='bg-gray-200 shadow'>${txt}</code>`))).pop(), To(this,[{2:'pN'},'nES']).innerHTML = To(this,[{2:'pN'},'nES']).innerHTML.replace(/<code[^]+$/, html.join(', ')+end)" class='rounded-xl bottom-full to-top bg-white absolute tooltip divide-y divide-current'>
                 <li><button class='rounded-t-xl w-full p-1 bg-blue-100'>html</button></li>
                 <li><button class='w-full p-1 bg-blue-100'>body</button></li>
                 <li><button class='w-full p-1 bg-blue-100'>body *</button></li>
@@ -334,14 +344,14 @@ loops[0]=_=>{
               </ul>
             </div>
           </div>
-          <div class='text-left [&>*]:inline-block [&>*]:p-1'>
-            Reading <kbd>attributes</kbd> that contain
-            <input value='class, id' class='w-1/2 border-b border-current'>
+          <div class='relative text-left [&>*]:inline-block [&>*]:p-1'>
+            Reads <kbd>attributes</kbd> that contain
+            <input value='class, id' class='w-1/4 border-b border-current'>
             for elements <code class='bg-gray-200 shadow'>html</code>, <code class='bg-gray-200 shadow'>body</code> and all elements in <code class='bg-gray-200 shadow'>body</code>
           </div>
         </article>
       </main>
-      <div>
+      <div class="sm:mt-3 mt-7">
         Speed up this operation by <input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-middle placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current">times
       </div>
     </section>
@@ -366,7 +376,8 @@ loops[0]=_=>{
       <script>  
  let rAF=fxn=>{
    requestAnimationFrame(fxn);
- }, loops=[], ready=(wdw=window, cb, doc)=>loops[0]=_=>(doc=wdw.document||wdw.contentDocument)&&doc.readyState=='complete'&&(loops[0]=null, cb());
+ }, loops=[], frameDOMReady,
+ready=(wdw=window, cb, doc)=>loops[0]=_=>(doc=wdw.document||wdw.contentDocument)&&doc.readyState=='complete'&&(loops[0]=null, cb());
 
  /*IFFY for closing over one-time vars*/
 
@@ -383,8 +394,10 @@ loops[0]=_=>{
 
  frame.src='_index.html', begin(qS('form button')),
  frame.contentWindow.addEventListener("DOMContentLoaded", _=>{
-   console.log("::DOMContentLoaded::", qS('body *',!0, frame.contentDocument).length);
-   loops[0] = null, rStyles()
+   frameDOMReady = !0,
+   console.log("::DOMContentLoaded::", [].map.call(qS('body *',!0, frame.contentDocument)[0].attributes, attr=>attr.name+" - "+ attr.value));
+   loops[0] = null, rStyles
+   
  });
  
  function begin(btn) {
@@ -408,17 +421,25 @@ loops[0]=_=>{
 
 <script>
 // !emailjsInited&&emailjs.init({publicKey:"qydN_Wpez4U_igzD2"});
+let currentSec, currentIdx;
 
 window.addEventListener('DOMContentLoaded', _=>{
   if(html.style.backdropFilter === undefined) html.style.setProperty('--bg-opacity-pad', 0.7);
   animations.addRippleAnimations();
-  let secs = qS('main>section',!0,To(state, ['pN','nES']));
+  let secs = qS('main>section',!0,To(state, ['pN','nES'])), spin=To(state,['pES',{2:'fEC'}]),
+      sTxt = To(state,'fC');
+  
   loops[3] =_=>{
-    let idx = secs.findIndex(sec=>To(sec,'cL').contains('show'));
-    loops[idx]?.call&&(loops[idx].boost=qS('input[type=number]', 0, secs[idx])?.valueAsNumber||1),
-    statusText(idx)
+    // condition to ensure next styles are sliced and read until end
+    // if(frameDOMReady && !loops[0]?.call && Object.keys(rules).length < frame.contentDocument.styleSheets.length)  console.log("::REDO::", rules, frame.contentDocument.styleSheets.length), rStyles();
+    let idx = secs.findIndex(sec=>To(sec,'cL').contains('show')), time=3,
+        boost=Math.min(loops[idx]?.boost||1, 30), tasks=['styles', 'selectors'], vars=[rules, elements], result = Object.keys(vars[idx]).length;
+    // persistent code to check and update state   
+    sTxt.data = `Read${'ing'.repeat(!!loops[idx])} ${tasks[idx]}${(loops[idx]&&!result)?'...':' ('+result+')'}`,
+    spin.style.setProperty('animation-duration', `${loops[idx] ? 3-(boost>1 ? boost/11 : 0) : 0}s`),
+    To(spin, 'cL')[cLs(loops[idx]?.call&&(loops[idx].boost=qS('input[type=number]', 0, secs[idx])?.valueAsNumber||1))]('animate-spin'),
+    currentSec=_=>secs[idx], currentIdx=_=>idx
   }
 })
 </script>
-
 </body></html>
