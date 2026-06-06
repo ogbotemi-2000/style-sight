@@ -69,45 +69,147 @@ html {
   </style>
 <script>
 
-// styleStrings.replace(/\\/g,'').search(classname)
-let mediaRule, secs, rules = [], unique={}, selectors=[], usedCSS=[];
+function extractMatchingCSS(css, selector) {
+    let i = 0;
+    const len = css.length;
 
-let once;
+    function skipWhitespace() {
+        while (i < len && /\s/.test(css[i])) i++;
+    }
+
+    function parseBlock() {
+        const nodes = [];
+
+        while (i < len) {
+            skipWhitespace();
+
+            if (css[i] === '}') {
+                i++;
+                break;
+            }
+
+            const start = i;
+
+            // Read prelude (@media ... or selector)
+            while (i < len && css[i] !== '{' && css[i] !== '}') i++;
+
+            const prelude = css.slice(start, i).trim();
+
+            if (css[i] !== '{') continue;
+
+            i++; // consume {
+
+            if (prelude.startsWith('@media')) {
+                const children = parseBlock();
+
+                if (children.length) {
+                    nodes.push({
+                        type: 'media',
+                        prelude,
+                        children
+                    });
+                }
+            } else {
+                const bodyStart = i;
+                let depth = 1;
+
+                while (i < len && depth) {
+                    if (css[i] === '{') depth++;
+                    else if (css[i] === '}') depth--;
+                    i++;
+                }
+
+                const body = css.slice(bodyStart, i - 1);
+
+                if (prelude.includes(selector)) {
+                    nodes.push({
+                        type: 'rule',
+                        selector: prelude,
+                        body
+                    });
+                }
+            }
+        }
+
+        return nodes;
+    }
+
+    function stringify(nodes) {
+        let out = '';
+
+        for (const node of nodes) {
+            if (node.type === 'rule') {
+                out += `${node.selector}{${node.body}}\n`;
+            } else {
+                out += `${node.prelude}{\n${stringify(node.children)}}\n`;
+            }
+        }
+
+        return out;
+    }
+
+    return stringify(parseBlock());
+}  
+</script>
+<script>
+
+// styleStrings.replace(/\\/g,'').search(classname)
+let mediaRule, secs, rules = [], unique={}, selectors=[], usedCSS=[], selected=[];
 function getUsedCSS(arr, cb) {
   let list_1 = qS('ol',0,secs[0]), list_2=qS('ol',0,secs[2]),
-      list = list_1.cloneNode(!0), read = rules.length,
+      read = rules.length,
       hr = `<hr class="border-0 transform bg-green-200 h-full absolute inset-0 -left-2 -right-2" style="--tw-bg-opacity: 0.7; --tw-translate-x: -100%;">`;
   
   // only exit if the proxied page has no styles to be read
   if(!read && !frame.contentDocument.styleSheets.length) return cb();  
-  read && list_2.children.length < read && [].slice.call(list.children, list_2.children.length, read).forEach(li=>{
-    li.innerHTML = `<button class="text-left text-xs relative overflow-hidden ${li.className} bg-yellow-100 w-full">
-      ${li.innerHTML.replace('</code>', '</code>\n'+hr)}
-    </button>`,
-    li.removeAttribute('class'), list_2.appendChild(li)
-  }), cb;
   
-  let i=0, rule, cssRules=[], cssRule, name;
-  loops[2]=_=>{
-    if(!loops[2]) return loops[2] = null;
-    loops[2].boost = loops[1]?.boost||1;
-    if(!(rule=rules[i])) return i=0, console.log("::END:SELECTORS:MATCH::", read), cb(), loops[2]=null, _=>{
-      if(!(cssRule=cssRules[i])) return loops[2] = null;
-      // CSSStyleRule
-      once||= /CSSStyleRule/i.test(name=cssRule.constructor.name)
-      && !console.log("::RULES::", arr, Object.keys(cssRule), Object.values(cssRule)),
-      ++i;
-    };
-    cssRules.push(rule), ++i
-  }
+  
+  /*set i to 1 to skip over the heavy tailwind css and fontawesome's all.min.css files*/
+
+	let i=2, j=0, _rule, once, _rules=[], name, text, fixSpace=str=>str.replace(/(^|})(\s*\.[^{\n]+?)\s+(?=\{)/gm, (_, p1, selector) => p1 + selector.replace(/\s+/g, '')),
+      esc=cls=>cls.replace(/([^a-zA-Z0-9_-])/g, '\\$1');
+  
+	loops[3]=_=>{
+    loops[3].boost = Math.max(loops[0]?.boost||1, loops[1]?.boost||1, 100);
+		if(_rules = rules[i]) return usedCSS[i]||='', loops[3]=_=>{
+      loops[3].boost = Math.max(loops[0]?.boost||1, loops[1]?.boost||1, 100);
+			if(_rule = _rules[j]) {  
+       let { cssText } = _rule;
+
+       if(_rule.selectorText) text = _rule[(name=_rule.constructor.name)=='CSSStyleRule'?'selectorText':'cssText'].replace(/\\/g,''), /CSSStyleRule|CSSMediaRule/.test(name)
+         ? selectors.forEach(a=>{
+            let other;
+            if(~selected.indexOf(a)) return;
+            //added consideration for behaviour whereby selectors like `32xl:container` are processed as `32 xl:container`
+            if(~text.search(a) || (other=~text.replace(/\s+/g, '').search(a))) selected.push(a), console.log('::USED::', a, cssText), usedCSS[i] += (name=='CSSMediaRule'
+              //work on fixSpace response to put a space before all open braces if absent
+
+              ? extractMatchingCSS(other ? fixSpace(cssText).replace(/\s*\{/g, ' {') : cssText, '.'+esc(a)) //fix spacing issue considered above for when extracting media queries
+              : cssText)+'\n'
+         })
+         : (console.log('::OTHER:RULES::', _rule), usedCSS[i] += cssText);
+      } else usedCSS.forEach((css, idx)=>{
+        let li = list_1.children[idx].cloneNode(!0);
+        li.innerHTML = li.innerHTML = `<button class="text-left text-xs relative overflow-hidden ${li.className} bg-yellow-100 w-full">
+          ${li.innerHTML.replace('</code>', '</code>\n'+hr)}
+        </button>`, li.removeAttribute('class'),  list_2.children[idx] || (list_2.appendChild(li), qS('pre', 0, li).textContent = byteFormat(css.length))
+      }), cb, console.log('::LOOP[3]:END::', i, j, arr, loops[3].boost), loops[3]=null;
+      
+			j++ // j represents index of styles for which deleteRule, insertRule will be called
+		};
+		i++
+	}
+
 }
+
   
 
 function rElems() {
   let elems = [], sec = currentSec(), attrs=qS('div>input',0,sec).value.split(/,\s+/),
       sels=qS('ul>li>*',!0,sec).filter(el=>To(el,'cL').contains('bg-blue-100')).map(el=>el.textContent||el.value);
   sels.forEach(sel=>elems=elems.concat(qS(sel, /\*/.test(sel), frame.contentDocument)));
-  // console.log("::SELECTORS::", sels, attrs, elems.length)
+
+  
   let eLen = elems.length, i=0, incr=0;
   loops[1]=_=>{
     // at high invocation multipliers, some loops are called after the loop has ended
@@ -119,7 +221,7 @@ function rElems() {
       && attr.value.split(/\s+/).forEach(val=>{
         val && (unique[val] ||= (dump.push(val), incr=selectors.push(val), val))
       })
-    }), getUsedCSS(dump, _=>++i)
+    }), dump.length?getUsedCSS(function() { i+=1; }):++i;
   }
 }
   
@@ -141,7 +243,7 @@ function rStyles() {
 		// 2nd phase: filter out and store CSS style blocks only
 		return loops[0]=_=>{
 			if(!loops[0]?.call) return; //exit because invocations of loops[0] above are still called after everything is done and loops[0] is set to null
-			if(j>=keysLength) loops[0]=null, console.log('DONE::RULES', mediaRule.cssText.replace(/\\/g,''), mediaRule.selectorText, at, [].map.call(frame.contentDocument.styleSheets, (s,i)=>i), keys);
+			if(j>=keysLength) loops[0]=null, console.log('DONE::RULES', mediaRule.cssText.replace(/\\/g,''), mediaRule, at);
       else {
 				// reset inner loop counters and state, and move on to the next cssRule
 				if(i>=rulesLen) {
@@ -329,46 +431,46 @@ function rStyles() {
     </div>
     <div style="background-image: url(icons/play-pause.webp); background-size: 50% auto;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div>
   </button>
-  <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t text-xs border-current p-1 ripple">Read selectors (0)<code class="inline-block p-1 py-2 border-b border-current">view</code>
+  <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t text-xs border-current p-1 ripple">Waiting...<code class="inline-block p-1 py-2 border-b border-current">view</code>
   </button>
 </section>
 
 <main style="max-width:100%" class="w-full absolute bg-gray-100 right-0 top-full mt-px">
   <button onclick="To(this,['pN','cL']).add('inert')" class="z-1 absolute text-xs right-0 top-0 m-1 p-2.5 border border-current rounded-3xl">close</button>
-  <main class="p-2 relative overflow-hidden">
+  <main class="p-3 relative overflow-hidden">
     <!--section for reading styles-->
     <section class="inset-0 tooltip no-hover no-focus slide show">
       <h3 class="text-sm font-semibold opacity-70">CSS Stylesheets</h3>
       <p class="text-sm">Extract all styles that affect the page</p>
       <ol style="max-height:6rem" class="overflow-y-scroll text-left my-1 [&amp;&gt;*]:relative">
-        <li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center rounded-full overflow-hidden">
-          <code class="w-full truncate relative z-1">Inline stylesheets or external CSS assets</code>
-<pre class="text-right relative z-1" style="width:42%;">0 bytes</pre>
-        </li>
-      </ol>
+        
+      <li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center rounded-full overflow-hidden">
+          <code class="w-full truncate relative z-1">Inline stylesheet or external CSS</code>
+<pre class="text-right relative z-1" style="width:45%;">0 bytes</pre>
+        </li></ol>
 <div>
 <button class="border-b border-current mr-1" onclick="To(this,[{3:'pN'},'nES','fEC','nES']).click()">Go to next section</button>
   <span class="bulge-center font-mono text-gray-700 inline-flex relative mx-5 my-0 h-9 w-px items-center justify-center">
     <span class="px-1.5 text-xs text-black bg-gray-100">or</span></span>
-  quicken by<input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-middle placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current">times
+  quicken by<input placeholder="&lt;N&gt;x" min="1" class="inline-block align-middle placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current" type="number" name="boost_1">times
   </div>
     </section>
     <!--section for listing and matching classnames with styles-->
     <section class="inset-0 tooltip no-hover no-focus slide absolute">
       <h3 class="text-sm font-semibold opacity-70">Detection of Used Styles</h3>
       <p class="text-sm mb-2.5">Detects styles with matching selectors</p>
-      <article>
-        <h4 class="truncate font-mono mb-1">[webpage title]</h4>
-        <main class="relative flex items-center">
-          <div class="bg-gray-100 inset-0 sm:relative absolute mr-2 w-full">
-            <p class="sm:relative absolute font-semibold opacity-0 sm:opacity-50">Webpage Document</p>
-            <aside class="opacity-5 sm:opacity-70 space-y-3 rounded-lg p-2">
+      <article class="relative">
+        <h4 class="truncate font-mono mb-1">Open source software for external stylesheet trimming and comparison</h4>
+        <main class="flex items-center">
+          <div class="bg-gray-100 inset-0 sm:relative absolute mr-2 w-full flex flex-col items-center">
+            <p class="font-semibold opacity-0 sm:opacity-50">Webpage Document</p>
+            <aside class="opacity-5 sm:opacity-70 space-y-3 rounded-lg p-2 w-full">
               <hr class="border-current w-1/2">
               <hr class="w-3/4 border-current">
               <hr class="border-current">
               <hr class="border-current">
        </aside>
-            <div class="border sm:block inline-block border-current relative">
+            <div class="border border-current sm:relative absolute top-full mt-2">
               <button class="border-b border-current ">•choose&nbsp;elements</button>
               <ul onclick="let t=event.target, html, end; /button|input/i.test(t.tagName) &amp;&amp; To(t,'cL').toggle('bg-blue-100'), end=(html=qS('.bg-blue-100',!0,this).filter(el=&gt;el.textContent||el.value).map((chsn,i,a,txts,txt)=&gt;(txt=(txts=(chsn.textContent||chsn.value).replace(/\s+/g,'').split('*')).shift(), `${' and'.repeat(a.length&gt;1&amp;&amp;!a[i+1])} ${txts.map(tx=&gt;'all elements in').join(' ')} &lt;code class='bg-gray-200 shadow'&gt;${txt}&lt;/code&gt;`))).pop(), To(this,[{2:'pN'},'nES']).innerHTML = To(this,[{2:'pN'},'nES']).innerHTML.replace(/&lt;code[^]+$/, html.join(', ')+end), `&lt;code class='bg-gray-200 shadow'&gt;&lt;/code&gt;`, console.log('::SEE::', html, end)" class="rounded-xl bottom-full to-top bg-white absolute tooltip divide-y divide-current">
                 <li><button class="rounded-t-xl w-full p-1 bg-blue-100">html</button></li>
@@ -380,13 +482,12 @@ function rStyles() {
           </div>
           <div class="relative text-left [&amp;&gt;*]:inline-block [&amp;&gt;*]:p-1">
            Reads <kbd>attributes</kbd> that contain
-            <input value="class, id" class="w-1/4 border-b border-current">
-            for <strong class="opacity-70">elements:</strong> <code class="bg-gray-200 shadow">html</code>, <code class="bg-gray-200 shadow">body</code> and all elements in <code class="bg-gray-200 shadow">body</code>
-          </div>
+            <input value="class, id" class="border-b border-current">
+            for <strong class="opacity-70">elements:</strong>                                                                           <code class="bg-gray-200 shadow">html</code>,   <code class="bg-gray-200 shadow">body</code> and all elements in <code class="bg-gray-200 shadow">body</code></div>
         </main>
       </article>
-      <div class="sm:mt-3 mt-8">
-        Speed up this operation by <input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-middle placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current">times
+      <div class="sm:mt-3 mt-9">
+        Speed up this operation by <input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-middle placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current" name="boost_2">times
       </div>
     </section>
     <!--section for applying pruned to pages -->
@@ -397,7 +498,7 @@ function rStyles() {
       <p class="text-sm">Preview effects of trimed styles for validity</p>
 <header class="flex justify-between mt-2">
 <div class="text-left">
-<h4 class="text-sm">Used styles</h4>Click each to toggle its preview </div><button class="border border-current ripple relative" onclick="To(qS('main&gt;article'),'cL').add('show')">expand</button>
+<h4 class="text-sm">Used styles</h4>Click each to toggle its preview </div><button class="border border-current ripple relative" onclick="To(qS('main&gt;article'),'cL').add('show')">more actions</button>
 </header>
 <ol style="max-height:6rem" class="space-y-1 overflow-y-scroll mt-1">
 <!-- styles list with used styles -->
@@ -405,7 +506,7 @@ function rStyles() {
 
     </section>
   </main>
-  <aside class="[&amp;&gt;*]:relative mt-2 divide-x divide-current flex justify-around bg-white [&amp;&gt;*]:p-2 rounded-inherit" onclick="let main=To(this,'pES'), sec=qS('.show',0,main), secs=main.children, hr=qS('.border-current',0,this), t=event.target, cls=['absolute', 'show'], i=[].indexOf.call(this.children, t); if(t.tagName!=='BUTTON') return; sec!=secs[i] &amp;&amp; [sec, secs[i]].forEach(s=&gt;cls.forEach(cl=&gt;To(s,'cL').toggle(cl))), [hr, qS('hr',0,t)].forEach(hr=&gt;To(hr,'cL').toggle('border-current'))">
+  <aside onclick="let main=To(this,'pES'), sec=qS('.show',0,main), secs=main.children, hr=qS('.border-current',0,this), t=event.target, cls=['absolute', 'show'], i=[].indexOf.call(this.children, t); if(t.tagName!=='BUTTON') return; sec!=secs[i] &amp;&amp; [sec, secs[i]].forEach(s=&gt;cls.forEach(cl=&gt;To(s,'cL').toggle(cl))), [hr, qS('hr',0,t)].forEach(hr=&gt;To(hr,'cL').toggle('border-current'))" class="[&amp;&gt;*]:relative mt-1 divide-x divide-current flex justify-around bg-white [&amp;&gt;*]:p-2 rounded-inherit">
     <button class="ripple flex-1"><p>extract styles</p><hr class="p-0.5 border-4 inline-block rounded-full border-current"></button>
     <button class="ripple flex-1"><p>read webpage</p><hr class="p-0.5 border-4 inline-block rounded-full"></button>
     <button class="ripple flex-1"><p>visualize</p><hr class="p-0.5 border-4 inline-block rounded-full"></button>
@@ -417,7 +518,12 @@ function rStyles() {
 </aside>
 </section>
 
-<article class="absolute inset-0 bg-white z-1 tooltip -slide-y no-hover no-focus no-focus-within"></article>
+<article class="absolute inset-0 bg-white z-1 tooltip -slide-y no-hover no-focus no-focus-within text-black text-left p-2">
+  <header>
+<button class="border-b border-current p-2" onclick="To(this,[{2:'pN'},'cL']).remove('show')">exit</button>
+</header>
+
+</article>
 </main>
       <script>  
  let rAF=fxn=>{
@@ -475,7 +581,7 @@ window.addEventListener('DOMContentLoaded', _=>{
   console.log("::SECS::", secs);
   let spin=To(state,['pES',{2:'fEC'}]), sTxt = To(state,'fC');
   
-  sTxt.data = 'Waiting...', loops[4] =_=>{
+  sTxt.data = 'Waiting...', loops[4]=_=>{
     // condition to ensure styles are sliced and read until end
     // if(frameDOMReady && !loops[0]?.call && Object.keys(rules).length < frame.contentDocument.styleSheets.length)  rStyles();
     
