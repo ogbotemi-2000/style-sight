@@ -1,12 +1,14 @@
-<!DOCTYPE HTML><html style="--bg-opacity-pad: 0.7;"><head>
+<!DOCTYPE HTML>
+<html style="--bg-opacity-pad: 0.7;"><head>
         <title>Open source software for external stylesheet trimming and comparison</title><meta charset="utf-8"><meta name="theme-color" content="#ff056"><meta name="color-scheme" content="light"><meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="css/tailwind.min.css">
         <link rel="stylesheet" href="css/all.min.css">
         <link rel="stylesheet" href="css/page.css">
 	      <!-- <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script> -->
-        <script src="js/ripples.js"></script><script src="js/utils.js"></script>
+        <script src="js/ripples.js"></script>
+        <script src="js/utils.js"></script>
         <script src="js/both.js"></script>
-  <script src="js/Gradient.js"></script>
+        <script src="js/Gradient.js"></script>
 
         <link rel="shortcut icon" href="favicon.png">
 
@@ -17,6 +19,9 @@
   */
 </script>
   <style>
+  [hidden] {
+    display: none;
+  }
   button.ripple > *, a.ripple > * {
     pointer-events: none;
   }
@@ -28,8 +33,8 @@
 }
   button {
     color: currentColor;
-  }
-  @keyframes fadeIn {
+}
+@keyframes fadeIn {
   0%, 50% {opacity: 0;}
   100% {opacity: 1;}
 }
@@ -217,211 +222,135 @@ function getCSS() {
 	}
 }
 
-
+let selectorsRgx='[.#](';
 function rElems() {
-  let elems = [], sec = secs[1], attrs=qS('div>input',0,sec).value.split(/,\s+/),
+  let elems = [], sec = secs[0], attrs=qS('div>input',0,sec).value.split(/,\s+/),
       sels=qS('ul>li>*',!0,sec).filter(el=>To(el,'cL').contains('bg-blue-100')).map(el=>el.textContent||el.value);
   sels.forEach(sel=>elems=elems.concat(qS(sel, /\*/.test(sel), frame.contentDocument)));
 
-  
   let eLen = elems.length, i=0, incr=0;
-  loops[1]=_=>{
+  loops[0]=_=>{
     // at high invocation multipliers, some loops are called after the loop has ended
-    if(!loops[1]) return loops[1] = null;
-    if(i>=eLen) return loops[1]=null, console.log("::SELECTORS::", selectors);
+    if(!loops[0]) return loops[0] = null;
+    if(i>=eLen) return loops[0]=null;
     let elem = elems[i], dump=[];
     [].forEach.call(elem.attributes, attr=>{
       attrs.filter(str=>~attr.name.search(str.trim())).length
-      && attr.value.split(/\s+/).forEach(val=>{
-        val && (unique[val] ||= (dump.push(val=(attr.name=='id'?'#':'.')+val), incr=selectors.push(val), val))
+      && attr.value.split(/\s+/).filter(e=>e).forEach((val, j, arr)=>{
+        val && (unique[val] ||= (selectorsRgx += val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '|', dump.push(val=(attr.name=='id'?'#':'.')+val), incr=selectors.push(val), val))
       })
     }), ++i;
   }
 }
   
 function rStyles() {
-  // make a static copy of styleSheets to not worry over dynamic increase in its length
-  let at=rules.length, styles=[].slice.call(frame.contentDocument.styleSheets, at, Infinity), // take half slices to prevent glitches in loop state
-      stylesLen=styles.length, __rules=[], sec=/*currentSec() ||*/ qS('section',0,To(state, ['pN','nES'])), list = qS('ol',0,sec), i = 0;
-	
-  // add a list to avoid re-writing current last list if i>0, i.e. resuming from previous
-  at&&To(list,'lEC').after(To(list,'lEC').cloneNode(!0));
+  /* the array prototype method below makes a static copy of the dynamic
+     styleSheets array while filtering out duplicate styles on webpages
+  */
+  let templates = rStyles.lists ||= [], at=rules.length, styles=[].filter.call(frame.contentDocument.styleSheets, style=>{
+        let css = style.cssRules;
+        return css.length && (rules.find(st=>css.length == st.length && st[0].cssText == css[0].cssText) || !rules.length)
+      }), stylesLen = styles.length, __rules=[], list = qS('ol', 0, secs[1]), 
+      // the prefix u_ denotes variables for the used css section
+      u_list = qS('ol', 0, secs[2]), i = 0, shim = { cssText:'' };
+
+  // add a list to avoid re-writing current last list if i>0, i.e. if resuming from previous
+  [list, u_list].forEach((lst, i)=>{
+    templates[i] ||= To(lst,'lEC').cloneNode(!0),
+    at&&To(lst,'lEC').after(To(lst,'lEC').cloneNode(!0) || templates[i])
+  })
   if(!stylesLen) return;
 // 1st phase of extraction: read cssRules and store them in `rules` with their href or key
-  loops[0]=_=>{
+  loops[1]=_=>{
     if(i==stylesLen) {
 		i = 0;
     // using [].map over Object.keys to get the right order of keys without any intrinsic sorting which is done by the latter
-		let keys=[].map.call(rules, (s,i)=>s.href||i) || Object.keys(rules), keysLength=(__rules||keys).length, j=0, lists = list.children, size=0,
-		cssRules = __rules[/*keys[*/j/*]*/], rulesLen = cssRules.length, sheets=[];/*will be reset for next cssRule*/
+		let keys=Object.keys(rules), keysLength=(__rules||keys).length, j=0, lists = [list, u_list].map(lst=>lst.children), size=0,
+		cssRules = __rules[j], rulesLen = cssRules.length, sheets=[];/*will be reset for next cssRule*/
 		// 2nd phase: filter out and store CSS style blocks only
-		loops[0]=_=>{
-			if(!loops[0]?.call) return; //exit because invocations of loops[0] above are still called after everything is done and loops[0] is set to null
-			if(j>=keysLength) loops[0]=null, console.log('DONE::RULES', frame.contentDocument.styleSheets.length, rules.length, at);
+		loops[1]=_=>{
+			if(!loops[1]?.call) return; //exit because invocations of loops[0] above are still called after everything is done and loops[0] is set to null
+			if(j>=keysLength) loops[2] = loops[1] = null;
       else {
 				// reset inner loop counters and state, and move on to the next cssRule
 				if(i>=rulesLen) {
-					rules.push(sheets), ++j, __rules[j] && (rulesLen=(cssRules = __rules[j]).length), size=i=0, sheets=[];
-				} else  cssRules[i] && cssRules[i].constructor.name == 'CSSMediaRule' && (mediaRule=cssRules[i]), sheets.push(cssRules[i]),
-						To(lists[j], {2:'lEC'}).textContent=byteFormat(size+=cssRules[i]?.cssText.length||0);
+          // To(lists[1][j+at], ['fEC', 'cL']).remove('bg-yellow-300'),
+          let hrs = qS('hr', 0, lists[1][j+at]).style;
+          hrs.getPropertyValue('--tw-translate-x') != '-100%' && ['--tw-translate-x', '--tw-bg-opacity']
+          .forEach((s,i)=>hrs.setProperty(s, i ? '.6' : '0%')),
+					rules.push(sheets), ++j, lists.forEach(lst=>lst[j+at]?.removeAttribute('hidden')), __rules[j] && (rulesLen=(cssRules = __rules[j]).length), size=i=0, sheets=[];
+				} else {
+          let _rule = cssRules[i], css = _rule.cssText;
+          sheets.push(_rule), To(lists[0][j+at], { 2:'lEC' }).textContent=byteFormat(size+=css.length);
+          
+          // this code will be defined in a function invoked here
+          let name, text = _rule[(name=_rule.constructor.name)=='CSSStyleRule'?'selectorText':'cssText']
+            // 1. Decode CSSOM hex escapes (e.g., \3A or \3a into actual characters)
+            .replace(/\\([0-9a-fA-F]{1,6})\s?/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+            // 2. Strip remaining literal escape backslashes
+            .replace(/\\/g, ''), queriesRgx = selectorsRgx.replace(/\|$/, ")(?=,|\s|)");
+          
+          loops[2]=_=>_,
+          text.replace(new RegExp(queriesRgx), (m,n,s)=>{
+            // console.log(text, "MATCH", m, "AT", n,":", _rule.cssText),
+            To(lists[1][j+at], ['fEC', 'cL']).add('bg-yellow-300'),
+            (s = To(lists[1][j+at], { 3:'lEC' })).textContent = byteFormat((usedCSS[j] += _rule.cssText).length), 
+            To(s, 'pES').style.setProperty('--tw-translate-x', -100 + (100 * i / rulesLen) + '%')
+          })
+        }
 				i++
 			}
 	  }
 		// only add and enumerate rules if they haven't been processed
-	  } else __rules.push(styles[i].cssRules), To(list,['lEC','fEC']).textContent=styles[i].href||'Inline stylesheet',
-	      styles[1+i]&&To(list,'lEC').after(To(list,'lEC').cloneNode(!0));
-	   ++i;
+	  } else __rules.push(styles[i].cssRules), [list, u_list].forEach((lst, n)=>{
+        i && To(lst, 'lEC').setAttribute('hidden', ''),
+        To(lst,['lEC', 'lEC'.repeat(n), 'fEC']).textContent=styles[i].href?.split('/').slice(-2).join('/') || 'Inline stylesheet',
+        styles[1+i]&&To(lst,'lEC').after(To(lst,'lEC').cloneNode(!0) || templates[i]);
+      }), usedCSS[i] = '', ++i;
     }
 }
 
 </script>
-
-    </head><body class="text-white" onanimationend="setTimeout(_=&gt;To(gradient,'cL').remove('opacity-0'), 60)">
+</head>
+<body class="text-white" onanimationend="setTimeout(_=&gt;To(gradient,'cL').remove('opacity-0'), 60)">
 	<div id="retry" class="py-3 text-sm no-hover no-focus no-focus-within fixed tooltip -slide-y w-full text-center bg-n-black">
 	  � Success or error? You may retry with another webpage whether or not there was a snag<button class="ripple relative mt-3 ml-3 rounded rounded-tr-xl p-3 ripple bg-blue-100" onclick="page.retry()">Another?</button>
 	</div>
-	<!--
-        <nav style="--tw-bg-opacity:0.3" class="items-center text-sm backdrop-blur backdrop-filter z-1 [&amp;&gt;*]:relative lg:right-1/4 lg:left-1/4 sm:right-20 sm:left-20 left-0 right-0 [&amp;&gt;*]:p-2 rounded-t-3xl [&amp;&gt;*]:align-middle flex justify-around [&amp;&gt;*]:inline-block bottom-0 fixed p-1 px-3 border border-b-0 border-gray-500">
-	  <a style="overflow: visible;" target="_blank" href="roadmap.html" class="ripple"><i class="z-2 p-2 align-middle inline-block text-2xl fa fa-map-signs opacity-70"></i>
-      <pre class="font-normal font-sans base:relative absolute inline-block tooltip base:show bg-white rounded base:bg-transparent p-3 base:p-0 bottom-full base:bottom-0 left-0">roadmap</pre>
-      <i class="text-xs inline-block ml-1 opacity-70 fa fa-external-link-alt"></i>
-      </a>
-
-      <div>
-	    <a style="overflow:visible" class="relative ripple" href="javascript:void(0)"><i class="m-2 inline-block align-middle text-2xl fa fa-signal opacity-70"></i>
-        <pre class="font-normal font-sans base:relative absolute inline-block tooltip base:show bg-white rounded base:bg-transparent p-3 base:p-0 bottom-full left-0 base:bottom-0">scale</pre>
-      </a>
-	    <section style="z-index:1; --arrow-size:10px;" class="ml-10 xl:ml-14 sm:w-auto w-96 h-68 absolute tooltip slide-y to-top border border-gray-500 rounded-xl p-4 text-xs md:text-sm sm:flex sm:justify-around sm:items-center sm:space-x-6 rounded-t-none">
-		<h5 class="rounded-t-xl p-3 bg-inherit left-0 w-full absolute bottom-full border">Scale by trimming the CSS used by multiple pages in your website at once</h5>
-	<strong class="text-center">Contact</strong>
-	<form onsubmit="return false;" style="--focus-within-no-focus-transition: opacity 0.5s ease, transform 0.3s 0.05s ease-out, visibility 0s 0.12s; margin: auto;" class="send-email absolute no-focus-within flex flex-col bottom-2 border-2 bg-white p-1.5 top-10 right-0 sm:right-2 left-0 sm:left-24 sm:top-2 sm:bottom-4 tooltip no-hover no-focus slide rounded-inherit">
-		<div class="w-full space-x-2 items-center justify-between flex sm:flex-col sm:items-start sm:space-x-0">
-			<button class="ripple text-center font-fredoka relative flex justify-center p-1 px-2 bg-gray-100 rounded-full hover:bg-gray-300 focus:border-gray-600 border-4 duration-200" onclick="requestAnimationFrame(_=&gt;this.trigger.focus()), this.trigger.mail.classList.remove('show')" type="button" disabled="">proxying</button>
-			<fieldset class="w-full">
-				<label class="flex items-center justify-around space-x-2">
-					<p class="whitespace-pre">From:     </p>
-					<input required="" type="email" class="inputField w-full rounded-br-md border-b border-r border-current p-1 flex-1 text-black bg-white" placeholder="please enter your email address here">
-				</label>
-				<label class="flex items-center space-x-2 justify-start">
-					<p class="whitespace-pre">Name:    </p>
-					<input required="" placeholder="please enter your name here" class="inputField flex-1 w-full rounded-tr-md border-t border-r border-current p-1 text-black bg-white">
-				</label>
-			</fieldset>
-		</div>
-		<textarea required="" class="inputField h-full p-2 resize-none w-full border-b border-r border-current rounded-br-md text-black bg-white" placeholder="enter your message here"></textarea>
-
-		<button class="hidden rounded-tr-lg flex items-center rounded-tl-lg p-1 ripple border-b-0 border-t-2 border-l-2 border-r-2  -right-0.5 absolute top bottom-full bg-white text-black" type="button" onclick="let cls = this.firstElementChild.classList, method=(this.cLs||=(this.pNode||=objWalk(this, {3:'parentNode'})).classList).contains('h-1/2')?(this.firstChild.data='expand', 'remove'):(this.firstChild.data='collapse', 'add'); cls[method]('fa-chevron-right'), ['h-1/2'].forEach(e=>this.cLs[method](e))">expand<i class="pointer-events-none fa bg-gray-100 p-2 ml-1 rounded-lg hover:bg-white fa-chevron-left"></i></button>
-
-		<button type="submit" class="sm:pb-2 sm:absolute top-0 sm:right-2 sm:w-1/4 ripple relative ripple mt-1 float-left bg-blue-100 text-blue-700 p-2 pb-6 rounded">
-			<hr class="-translate-x-full top-0 border-0 bg-blue-300 absolute bottom-0 right-2 -mx-2 left-2 h-full w-full transform-gpu" style="--tw-translate-x: -101%;">
-			<p class="pointer-events-none relative">send</p>
-		</button>
-	</form>
-	<main class="relative space-y-2 flex-col flex">
-		<a href="https://www.buymeacoffee.com/oogbotemiT/membership" class="ripple rounded-md text-yellow-800 border-yellow-100 bg-yellow-50 border-2 inline-block sm:text-left text-center sm:w-72" style="text-decoration: unset;" data-ripple-scale="2"><img src="img/bmc-logo-no-background.png" class="inline-block w-5 align-middle m-2">become a member and scale easily</a>
-	</main>
-	<div class="sm:h-28 sm:w-0.5 my-4 bulge-center h-px flex items-center justify-center">
-		<span class="text-xs bg-n-black p-2">or</span>
-	</div>
-
-	<aside class="sm:w-48 lg:w-60 space-y-2 p-4">
-		<p>compose a message and send it as an e-mail through this site</p><button id="compose" class="font-sans ripple text-xs rounded-lg border-2 border-gray-500 p-2 text-right relative hover:bg-gray-200 focus:border-gray-600 text-current" onclick="(_=&gt;{
-			/*handles sending to mail*/
-			(this.send||=objWalk(((this.close||=objWalk(this.mail||=
-				objWalk(this.parentNode, {3:'previousElementSibling'}),
-				{2: 'firstElementChild'})).trigger||=this).close, {2:'parentNode'}).lastElementChild).onclick = function() {
-					this.states ||=['failed', 'send', 'send...', 'stopped', 'sent'],
-					(w.cancelAnimationFrame||clearInterval)(this.interval), this.loader ||= this.firstElementChild.style,
-					
-					this.incr ||=0.6, this.p ||=this.querySelector('p'),
-					_ = slice(compose.inputFields).filter(e=&gt;e.value);
-
-				if(_.length === compose.inputFields.length&amp;&amp;navigator.onLine) {
-				this.interval = (w.requestAnimationFrame||setInterval)(this.cb||=_=&gt;{
-					this.setAttribute('disabled', true);
-					if (_=w.requestAnimationFrame) {this.interval = _(this.cb)}
-		
-					this.added = +this.loader.getPropertyValue('--tw-translate-x').replace('%', '')+this.incr,
-					this.loader.setProperty('--tw-translate-x', this.added+'%'),
-		
-					this.p.textContent = this.states[2],
-					(this.added|0)&gt;=100&amp;&amp;(this.loader.setProperty('--tw-translate-x', '-100%'), this.incr = 0.6,
-					(w.cancelAnimationFrame||clearInterval)(this.interval), this.p.textContent=this.states[4], setTimeout(_=&gt;{this.removeAttribute('disabled'), this.p.textContent = this.states[1],slice(compose.inputFields).forEach(e=&gt;e.value='')}, 1250))
-				}, 1000/60),
-					emailjs.send('connect_client', 'template_9uoshjc', {
-						sender_name:compose.inputFields[1].value,
-						message: '::[FROM WEBSITE]::\n\n'+compose.inputFields[2].value,
-						reply_to: compose.inputFields[0].value,
-						sender_email: compose.inputFields[0].value
-						}).then(response=&gt; {
-						this.incr = 100;
-						}, function(error) {
-						console.log('FAILED...', error);
-						})
-				}
-			},
-			this.inputFields ||= compose.mail.getElementsByClassName('inputField')
-			setTimeout(_=&gt;this.close.focus(), 200),
-			this.mail.classList.add('show')  
-		})(1)">compose</button>
-		
-	</aside>
-</section>
-	  </div>
-
-<a style="overflow:visible" class="ripple" target="_blank" href="https://github.com/ogbotemi-2000/rmrf-css-client"><i class="z-2 p-2 align-middle inline-block text-3xl fab fa-github opacity-70"></i>
-      <pre class="font-normal font-sans base:relative absolute inline-block tooltip base:show bg-white rounded base:bg-transparent p-3 base:p-0 bottom-full base:bottom-0 left-0">github</pre>
-      </a>
-
-	  <a href="https://www.buymeacoffee.com/oogbotemiT" tabindex="0" style="overflow:visible" class="[&amp;&gt;*]:align-middle ripple">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 884 1279" fill="none" class="w-6 inline-block">
-<path d="M791.109 297.518L790.231 297.002L788.201 296.383C789.018 297.072 790.04 297.472 791.109 297.518V297.518Z" fill="#0D0C22"></path>
-<path d="M803.896 388.891L802.916 389.166L803.896 388.891Z" fill="#0D0C22"></path>
-<path d="M791.484 297.377C791.359 297.361 791.237 297.332 791.118 297.29C791.111 297.371 791.111 297.453 791.118 297.534C791.252 297.516 791.379 297.462 791.484 297.377V297.377Z" fill="#0D0C22"></path>
-<path d="M791.113 297.529H791.244V297.447L791.113 297.529Z" fill="#0D0C22"></path>
-<path d="M803.111 388.726L804.591 387.883L805.142 387.573L805.641 387.04C804.702 387.444 803.846 388.016 803.111 388.726V388.726Z" fill="#0D0C22"></path>
-<path d="M793.669 299.515L792.223 298.138L791.243 297.605C791.77 298.535 792.641 299.221 793.669 299.515V299.515Z" fill="#0D0C22"></path>
-<path d="M430.019 1186.18C428.864 1186.68 427.852 1187.46 427.076 1188.45L427.988 1187.87C428.608 1187.3 429.485 1186.63 430.019 1186.18Z" fill="#0D0C22"></path>
-<path d="M641.187 1144.63C641.187 1143.33 640.551 1143.57 640.705 1148.21C640.705 1147.84 640.86 1147.46 640.929 1147.1C641.015 1146.27 641.084 1145.46 641.187 1144.63Z" fill="#0D0C22"></path>
-<path d="M619.284 1186.18C618.129 1186.68 617.118 1187.46 616.342 1188.45L617.254 1187.87C617.873 1187.3 618.751 1186.63 619.284 1186.18Z" fill="#0D0C22"></path>
-<path d="M281.304 1196.06C280.427 1195.3 279.354 1194.8 278.207 1194.61C279.136 1195.06 280.065 1195.51 280.684 1195.85L281.304 1196.06Z" fill="#0D0C22"></path>
-<path d="M247.841 1164.01C247.704 1162.66 247.288 1161.35 246.619 1160.16C247.093 1161.39 247.489 1162.66 247.806 1163.94L247.841 1164.01Z" fill="#0D0C22"></path>
-<path d="M472.623 590.836C426.682 610.503 374.546 632.802 306.976 632.802C278.71 632.746 250.58 628.868 223.353 621.274L270.086 1101.08C271.74 1121.13 280.876 1139.83 295.679 1153.46C310.482 1167.09 329.87 1174.65 349.992 1174.65C349.992 1174.65 416.254 1178.09 438.365 1178.09C462.161 1178.09 533.516 1174.65 533.516 1174.65C553.636 1174.65 573.019 1167.08 587.819 1153.45C602.619 1139.82 611.752 1121.13 613.406 1101.08L663.459 570.876C641.091 563.237 618.516 558.161 593.068 558.161C549.054 558.144 513.591 573.303 472.623 590.836Z" fill="#FFDD00"></path>
-<path d="M78.6885 386.132L79.4799 386.872L79.9962 387.182C79.5987 386.787 79.1603 386.435 78.6885 386.132V386.132Z" fill="#0D0C22"></path>
-<path d="M879.567 341.849L872.53 306.352C866.215 274.503 851.882 244.409 819.19 232.898C808.711 229.215 796.821 227.633 788.786 220.01C780.751 212.388 778.376 200.55 776.518 189.572C773.076 169.423 769.842 149.257 766.314 129.143C763.269 111.85 760.86 92.4243 752.928 76.56C742.604 55.2584 721.182 42.8009 699.88 34.559C688.965 30.4844 677.826 27.0375 666.517 24.2352C613.297 10.1947 557.342 5.03277 502.591 2.09047C436.875 -1.53577 370.983 -0.443234 305.422 5.35968C256.625 9.79894 205.229 15.1674 158.858 32.0469C141.91 38.224 124.445 45.6399 111.558 58.7341C95.7448 74.8221 90.5829 99.7026 102.128 119.765C110.336 134.012 124.239 144.078 138.985 150.737C158.192 159.317 178.251 165.846 198.829 170.215C256.126 182.879 315.471 187.851 374.007 189.968C438.887 192.586 503.87 190.464 568.44 183.618C584.408 181.863 600.347 179.758 616.257 177.304C634.995 174.43 647.022 149.928 641.499 132.859C634.891 112.453 617.134 104.538 597.055 107.618C594.095 108.082 591.153 108.512 588.193 108.942L586.06 109.252C579.257 110.113 572.455 110.915 565.653 111.661C551.601 113.175 537.515 114.414 523.394 115.378C491.768 117.58 460.057 118.595 428.363 118.647C397.219 118.647 366.058 117.769 334.983 115.722C320.805 114.793 306.661 113.611 292.552 112.177C286.134 111.506 279.733 110.801 273.333 110.009L267.241 109.235L265.917 109.046L259.602 108.134C246.697 106.189 233.792 103.953 221.025 101.251C219.737 100.965 218.584 100.249 217.758 99.2193C216.932 98.1901 216.482 96.9099 216.482 95.5903C216.482 94.2706 216.932 92.9904 217.758 91.9612C218.584 90.9319 219.737 90.2152 221.025 89.9293H221.266C232.33 87.5721 243.479 85.5589 254.663 83.8038C258.392 83.2188 262.131 82.6453 265.882 82.0832H265.985C272.988 81.6186 280.026 80.3625 286.994 79.5366C347.624 73.2302 408.614 71.0801 469.538 73.1014C499.115 73.9618 528.676 75.6996 558.116 78.6935C564.448 79.3474 570.746 80.0357 577.043 80.8099C579.452 81.1025 581.878 81.4465 584.305 81.7391L589.191 82.4445C603.438 84.5667 617.61 87.1419 631.708 90.1703C652.597 94.7128 679.422 96.1925 688.713 119.077C691.673 126.338 693.015 134.408 694.649 142.03L696.731 151.752C696.786 151.926 696.826 152.105 696.852 152.285C701.773 175.227 706.7 198.169 711.632 221.111C711.994 222.806 712.002 224.557 711.657 226.255C711.312 227.954 710.621 229.562 709.626 230.982C708.632 232.401 707.355 233.6 705.877 234.504C704.398 235.408 702.75 235.997 701.033 236.236H700.895L697.884 236.649L694.908 237.044C685.478 238.272 676.038 239.419 666.586 240.486C647.968 242.608 629.322 244.443 610.648 245.992C573.539 249.077 536.356 251.102 499.098 252.066C480.114 252.57 461.135 252.806 442.162 252.771C366.643 252.712 291.189 248.322 216.173 239.625C208.051 238.662 199.93 237.629 191.808 236.58C198.106 237.389 187.231 235.96 185.029 235.651C179.867 234.928 174.705 234.177 169.543 233.397C152.216 230.798 134.993 227.598 117.7 224.793C96.7944 221.352 76.8005 223.073 57.8906 233.397C42.3685 241.891 29.8055 254.916 21.8776 270.735C13.7217 287.597 11.2956 305.956 7.64786 324.075C4.00009 342.193 -1.67805 361.688 0.472751 380.288C5.10128 420.431 33.165 453.054 73.5313 460.35C111.506 467.232 149.687 472.807 187.971 477.556C338.361 495.975 490.294 498.178 641.155 484.129C653.44 482.982 665.708 481.732 677.959 480.378C681.786 479.958 685.658 480.398 689.292 481.668C692.926 482.938 696.23 485.005 698.962 487.717C701.694 490.429 703.784 493.718 705.08 497.342C706.377 500.967 706.846 504.836 706.453 508.665L702.633 545.797C694.936 620.828 687.239 695.854 679.542 770.874C671.513 849.657 663.431 928.434 655.298 1007.2C653.004 1029.39 650.71 1051.57 648.416 1073.74C646.213 1095.58 645.904 1118.1 641.757 1139.68C635.218 1173.61 612.248 1194.45 578.73 1202.07C548.022 1209.06 516.652 1212.73 485.161 1213.01C450.249 1213.2 415.355 1211.65 380.443 1211.84C343.173 1212.05 297.525 1208.61 268.756 1180.87C243.479 1156.51 239.986 1118.36 236.545 1085.37C231.957 1041.7 227.409 998.039 222.9 954.381L197.607 711.615L181.244 554.538C180.968 551.94 180.693 549.376 180.435 546.76C178.473 528.023 165.207 509.681 144.301 510.627C126.407 511.418 106.069 526.629 108.168 546.76L120.298 663.214L145.385 904.104C152.532 972.528 159.661 1040.96 166.773 1109.41C168.15 1122.52 169.44 1135.67 170.885 1148.78C178.749 1220.43 233.465 1259.04 301.224 1269.91C340.799 1276.28 381.337 1277.59 421.497 1278.24C472.979 1279.07 524.977 1281.05 575.615 1271.72C650.653 1257.95 706.952 1207.85 714.987 1130.13C717.282 1107.69 719.576 1085.25 721.87 1062.8C729.498 988.559 737.115 914.313 744.72 840.061L769.601 597.451L781.009 486.263C781.577 480.749 783.905 475.565 787.649 471.478C791.392 467.391 796.352 464.617 801.794 463.567C823.25 459.386 843.761 452.245 859.023 435.916C883.318 409.918 888.153 376.021 879.567 341.849ZM72.4301 365.835C72.757 365.68 72.1548 368.484 71.8967 369.792C71.8451 367.813 71.9483 366.058 72.4301 365.835ZM74.5121 381.94C74.6842 381.819 75.2003 382.508 75.7337 383.334C74.925 382.576 74.4089 382.009 74.4949 381.94H74.5121ZM76.5597 384.641C77.2996 385.897 77.6953 386.689 76.5597 384.641V384.641ZM80.672 387.979H80.7752C80.7752 388.1 80.9645 388.22 81.0333 388.341C80.9192 388.208 80.7925 388.087 80.6548 387.979H80.672ZM800.796 382.989C793.088 390.319 781.473 393.726 769.996 395.43C641.292 414.529 510.713 424.199 380.597 419.932C287.476 416.749 195.336 406.407 103.144 393.382C94.1102 392.109 84.3197 390.457 78.1082 383.798C66.4078 371.237 72.1548 345.944 75.2003 330.768C77.9878 316.865 83.3218 298.334 99.8572 296.355C125.667 293.327 155.64 304.218 181.175 308.09C211.917 312.781 242.774 316.538 273.745 319.36C405.925 331.405 540.325 329.529 671.92 311.91C695.905 308.686 719.805 304.941 743.619 300.674C764.835 296.871 788.356 289.731 801.175 311.703C809.967 326.673 811.137 346.701 809.778 363.615C809.359 370.984 806.139 377.915 800.779 382.989H800.796Z" fill="#0D0C22"></path>
-</svg>
-<pre class="font-normal font-sans base:relative absolute inline-block tooltip base:show bg-white rounded base:bg-transparent p-3 base:p-0 text-left bottom-full base:bottom-0 left-0">support</pre>
-    </a>
-	</nav>
-	-->
+  
 	<main class="relative text-center vh-full flex justify-around items-center flex-col">
           <!--overflow-hidden class on section below showed only the elements in .__class__ -  had to remove it- It is dangerous for elements with a auto height and shifting scroll depth due to editable children -->
           
-<canvas id="gradient" width="798" height="600" class="w-full h-full absolute duration-500 ease-out pointer-events-none is-loaded"></canvas>
+<canvas id="gradient" width="798" height="600" class="filter blur w-full h-full absolute duration-500 ease-out pointer-events-none is-loaded"></canvas>
 
-<section class="relative w-full sm:w-auto px-4">
+<section class="mb-16 mt-4 relative w-full duration-500 ease-out sm:w-auto px-4">
 
 <h3 class="text-lg font-semibold"><code style="--tw-bg-opacity:0.1" class="inline-block p-1.5 bg-white mr-1">StyleSight</code> for <code>CSS</code></h3>
-<p>Live-previews based pruning of unused styles from pages</p>
+<p class="tooltip no-hover no-focus slide-y show">Live-previews based pruning of unused styles from pages</p>
 
-<form method="get" action="/" onsubmit="begin(To(this,'lEC')), frame.src='/api/proxy?target=' + this.url.value.trim(); return false;" class="mt-2 flex items-center"><datalist id="protocols"><option value="http://erpevo.pages.dev/user"></option><option value="https://erpevo.pages.dev/user"></option></datalist>
-
-<label class="relative w-4/5 p-1.5 rounded-l-3xl rounded-r-3xl">
+<form id="form" method="get" action="/" onsubmit="event.preventDefault(), To(this,['pN','cL']).add('flex-1'), setTimeout(_=>begin(this.url.value), 400);" class="sm:w-96 mx-auto relative bg-n-black p-1 rounded-full mt-2 flex items-center">
   <div class="rounded-inherit overflow-hidden absolute inset-0 text-yellow-600 bg-n-black">
-    <div style="transform-origin: bottom; animation-duration: 3s; transform-origin: top right" class="top-1/2 right-1/2 inset-0 origin-center bg-gradient-to-b from-transparent via-current to-tansparent absolute animate-spin"></div>
+    <div style="animation-duration: 3s; transform-origin: top right" class="top-1/2 right-1/2 inset-0 origin-center bg-gradient-to-b from-transparent via-current to-tansparent absolute animate-spin"></div>
+    <div style="animation-duration: 3s; transform-origin: bottom right" class="top-1/2 right-1/2 inset-0 origin-center bg-gradient-to-r from-transparent via-current to-tansparent absolute animate-spin"></div>
   </div>
-<input list="protocols" required="" type="text" spellcheck="false" title="input the url to a webpage here" name="url" placeholder="Provide a webpage address here" oninput="let v=this.value, opts=objWalk(this, ['pN', 'pES']).children; v=v.replace(/^http(s)*:\/*/,''), ['','s'].forEach((e, i)=&gt;opts[i].value='http'+e+'://'+v)" class="relative text-white text-sm border-none p-2.5 rounded-inherit bg-n-black w-full sm:w-96"></label>
+  <datalist id="protocols">
+    <option value="http://"></option>
+    <option value="https://"></option>
+  </datalist>
+  <label class="relative bg-n-black mr-2 w-full rounded-l-3xl">
+    <input list="protocols" required="" type="text" spellcheck="false" title="input the url to a webpage here" name="url" placeholder="Provide a webpage address here" oninput="let v=this.value, opts=objWalk(this, ['pN', 'pES']).children; v=v.replace(/^http(s)*:\/*/,''), ['','s'].forEach((e, i)=&gt;opts[i].value='http'+e+'://'+v)" class="bg-transparent text-white text-sm border-none p-2.5 rounded-inherit w-full">
+  </label>
+  
+  <button class="bg-n-black ripple rounded-r-3xl p-3 text-yellow-600 relative font-semibold">proxy</button>
+</form>
+  <!-- <span class="bulge-center font-mono text-gray-700 w-1/2 mx-auto sm:inline-flex relative sm:mx-6 sm:my-0 my-5 text-sm sm:h-20 sm:w-px h-px flex items-center justify-center"><span class="px-4 p-1 text-black bg-white">or</span></span> -->
+</section>
 
-<button class="hover:bg-yellow-700 bg-yellow-800 inline-block ripple rounded-3xl p-3.5 relative font-semibold">proxy</button></form>
 
-          <!-- <span class="bulge-center font-mono text-gray-700 w-1/2 mx-auto sm:inline-flex relative sm:mx-6 sm:my-0 my-5 text-sm sm:h-20 sm:w-px h-px flex items-center justify-center"><span class="px-4 p-1 text-black bg-white">or</span></span> --></section>
-
-
-<section class="no-hover no-focus no-focus-within w-full tooltip -slide-y h-5/6 flex flex-col items-center justify-center absolute">
+<section class="no-hover no-focus no-focus-within w-full tooltip -slide-y h-full flex flex-col items-center justify-center absolute">
 
 <button onclick="/*plus, minus*/let ds=['M12 5v14M5 12h14', 'M5 12h14']; path=To(this,{2:'fEC'}), i=ds.indexOf(path.getAttribute('d')); path.setAttribute('d', ds[+!i]), To(this,['nES','cL']).toggle('inert')" class="absolute bottom-full text-black bg-yellow-600 rounded-full p-2.5 tooltip to-top show" style="--arrow-size:10px; --arrow-x:-44%;--arrow-y:-2px;--arrow-color:rgb(217,119,6);" hidden="">
   <svg xmlns="http://w3.org" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 12h14"></path> </svg></button>
-<aside class="inert absolute top-0 w-full sm:w-auto [&amp;&gt;*]:inline-block [&amp;&gt;*]:rounded-inherit rounded-2xl p-1 flex justify-around bg-white items-center text-black text-xs duration-300 sm:p-3 sm:space-x-10 sm:px-4">
+<aside class="inert absolute bottom-full w-full sm:w-auto [&amp;&gt;*]:inline-block [&amp;&gt;*]:rounded-inherit rounded-2xl p-1 flex justify-around items-center sm:text-sm text-xs duration-300 sm:p-3 sm:space-x-10 sm:px-4">
 
 <section class="[&amp;&gt;*]:inline-block relative">
   <span><strong class="text-xl">*</strong><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" class="inline-block" width="30">
@@ -436,47 +365,36 @@ function rStyles() {
 
   <!-- Paint Splash/Spill Indicator -->
   <path d="M7 9l-.5 4c0 1 .5 2 1.5 2s1.5-1 1.5-2L7 9Z" fill="currentColor"></path>
-</svg><code class="absolute tooltip p-1.5 bg-yellow-200 left-0 top-full mt-1 text-xs rounded-bl-xl">backgrounds will only apply for webpages that rely on a default of white background</code></span><div class="relative align-middle border-r border-t rounded-tr-xl border-current"><button class="p-1.5 py-2.5"><span class="align-middle p-1.5 inline-block rounded-full mr-2 border border-current"></span>none</button><ul onclick="let cls=['none','white','black'], btns=qS('button',!0,this), t=event.target; if(t.tagName!='BUTTON') return; frame.style.cssText='background:'+cls[btns.indexOf(t)], To(this,'pES').innerHTML=t.innerHTML" class="w-20 right-0 absolute tooltip bg-white border-t-0 border border-current rounded-b-xl p-1.5 mt-1 space-y-1">
+</svg>
+    <code class="absolute tooltip p-1.5 bg-yellow-200 left-0 top-full mt-1 text-xs rounded-bl-xl">backgrounds will only apply for webpages that rely on a default of white background</code></span><div class="relative align-middle border-r border-t rounded-tr-xl border-current"><button class="p-1.5 py-2.5"><span class="align-middle p-1.5 inline-block rounded-full mr-2 border border-current"></span>none</button>
+    <ul onclick="let cls=['none','white','black'], btns=qS('button',!0,this), t=event.target; if(t.tagName!='BUTTON') return; frame.style.cssText='background:'+cls[btns.indexOf(t)], To(this,'pES').innerHTML=t.innerHTML" class="w-20 right-0 absolute tooltip bg-white border-t-0 border border-current rounded-b-xl p-1.5 mt-1 space-y-1">
       <li><button><span class="align-middle p-1.5 inline-block rounded-full mr-2 border border-current"></span>none</button></li><li><button><span class="align-middle p-1.5 inline-block rounded-full border-2 bg-white border-current mr-1"></span>white</button></li><li><button><span class="align-middle p-1.5 inline-block rounded-full border-2 bg-black text-black border-current mr-1"></span>black</button></li>
     </ul>
   </div>
 </section>
 
 <section>
-  <button class="ripple relative rounded-full duration-500 ease-out text-yellow-700 p-0 align-middle mr-px" onclick="if(!currentIdx) return; let fxns=[rStyles, rElems, getCSS], idx=currentIdx(); (loops[idx]=null, To(this,[{2:'fEC'},'cL']).toggle('animate-spin'))&amp;&amp;fxns[idx]()">
+  <button class="ripple relative rounded-full duration-500 ease-out text-yellow-700 p-0 align-middle" onclick="if(!currentIdx) return; let fxns=[rElems, rStyles, getCSS], idx=currentIdx(), fxn = fxns[idx]; (fxn.resume ||= loops[idx], loops[idx]=null, To(this,[{2:'fEC'},'cL']).toggle('animate-spin'))&amp;&amp;(loops[idx] = fxn.resume,  fxn.resume || fxns[idx](), fxn.resume=null)">
     <div class="rounded-inherit overflow-hidden absolute inset-0 text-yellow-600 bg-blue-100">
       <div style="animation-duration: 0s; transform-origin: right top 0px;" class="top-1/2 right-1/2 inset-0 origin-center bg-gradient-to-r from-transparent via-current to-tansparent absolute"></div>
     </div>
     <div style="background-image: url(icons/play-pause.webp); background-size: 50% auto;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div>
   </button>
-  <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="relative border-t text-xs border-current p-1 ripple">Waiting...<code class="inline-block p-1 py-2 border-b border-current">view</code>
+  <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="p-0 pl-2 -ml-2 relative border-t text-xs border-r rounded-tr-xl border-current ripple">
+      Waiting...<code class="inline-block ml-1 px-1 py-2 border-current border-l">view</code>
   </button>
 </section>
 
-<main style="max-width:100%" class="inert w-full absolute bg-gray-100 right-0 top-full mt-px">
-  <button onclick="To(this,['pN','cL']).add('inert')" class="z-1 absolute text-xs right-0 top-0 m-1 p-2.5 border border-current rounded-3xl">close</button>
-  <main class="p-3 relative overflow-hidden">
-    <!--section for reading styles-->
-    <section class="inset-0 tooltip no-hover no-focus slide show">
-      <h3 class="text-sm font-semibold opacity-70">CSS Stylesheets</h3>
-      <p class="text-sm">Extract all styles that affect the page</p>
-      <ol style="max-height:6rem" class="overflow-y-scroll text-left my-1 [&amp;&gt;*]:relative">
-        
-      <li class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center rounded-full overflow-hidden">
-          <code class="w-full truncate relative z-1">Inline stylesheet or external CSS</code>
-<pre class="text-right relative z-1" style="width:45%;">0 bytes</pre>
-        </li></ol>
-<div>
-  Speed up this operation by <input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-bottom placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current" name="boost_2">times
-</div>
-  
-    </section>
+<main style="max-width:100%" class="inert w-full text-black absolute bg-gray-100 right-0 top-full mt-px">
+  <main class="relative overflow-hidden">
     <!--section for listing and matching classnames with styles-->
-    <section class="inset-0 tooltip no-hover no-focus slide absolute">
-      <h3 class="text-sm font-semibold opacity-70">Detection of Used Styles</h3>
-      <p class="text-sm mb-2.5">Detects styles with matching selectors</p>
+    <section class="p-3 inset-0 tooltip no-hover no-focus slide show">
+      <h3 class="text-sm font-semibold opacity-70">Detect Used Styles</h3>
+      <p class="text-sm">Detects styles with matching selector queries</p>
       <article class="relative">
-        <h4 class="truncate font-mono mb-1 relative z-1"7TITLE: >Open source software for external stylesheet trimming and comparison</h4>
+        <h4 class="truncate font-mono relative z-1">
+          <!-- webpage title -->
+        </h4>
         <main class="flex items-center">
           <div class="bg-gray-100 inset-0 sm:relative absolute mr-2 w-full flex flex-col items-center">
             <p class="font-semibold opacity-0 sm:opacity-50">Webpage Document</p>
@@ -485,7 +403,7 @@ function rStyles() {
               <hr class="w-3/4 border-current">
               <hr class="border-current">
               <hr class="border-current">
-       </aside>
+            </aside>
             <div class="border border-current sm:relative absolute top-full mt-2">
               <button class="border-b border-current ">•choose&nbsp;elements</button>
               <ul onclick="let t=event.target, html, end; /button|input/i.test(t.tagName) &amp;&amp; To(t,'cL').toggle('bg-blue-100'), end=(html=qS('.bg-blue-100',!0,this).filter(el=&gt;el.textContent||el.value).map((chsn,i,a,txts,txt)=&gt;(txt=(txts=(chsn.textContent||chsn.value).replace(/\s+/g,'').split('*')).shift(), `${' and'.repeat(a.length&gt;1&amp;&amp;!a[i+1])} ${txts.map(tx=&gt;'all elements in').join(' ')} &lt;code class='bg-gray-200 shadow'&gt;${txt}&lt;/code&gt;`))).pop(), To(this,[{2:'pN'},'nES']).innerHTML = To(this,[{2:'pN'},'nES']).innerHTML.replace(/&lt;code[^]+$/, html.join(', ')+end), `&lt;code class='bg-gray-200 shadow'&gt;&lt;/code&gt;`, console.log('::SEE::', html, end)" class="rounded-xl bottom-full to-top bg-white absolute tooltip divide-y divide-current">
@@ -507,44 +425,57 @@ function rStyles() {
         Speed up this operation by <input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-bottom placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current" name="boost_2">times
       </div>
     </section>
+    <!--section for reading styles-->
+    <section class="p-3 inset-0 tooltip no-hover no-focus slide absolute">
+      <h3 class="text-sm font-semibold opacity-70">CSS Stylesheets</h3>
+      <p class="text-sm">Extract all styles that affect the page</p>
+      <ol style="max-height:6rem" class="overflow-y-scroll text-left my-1 [&amp;&gt;*]:relative">
+        <li  class="divide-x divide-current [&amp;&gt;*]:p-2 flex items-center">
+          <code class="w-full truncate relative z-1">Inline stylesheet or external CSS</code>
+          <pre class="text-right relative z-1" style="width:45%;">0 bytes</pre>
+        </li>
+      </ol>
+      <div>
+        Speed up this operation by <input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-bottom placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current" name="boost_2">times
+      </div>
+    </section>
     <!--section for applying pruned to pages -->
-    <section class="tooltip no-hover no-focus slide inset-0 absolute">
+    <section class="p-3 tooltip no-hover no-focus slide inset-0 absolute">
       
-<h3 class="text-sm font-semibold opacity-70">Preview of Purged Styles</h3>
-      <p class="text-sm">Preview effects of trimed styles for validity</p>
-<header class="relative z-2 flex justify-between mt-2">
-  <div class="text-left">
-    <h4 class="text-sm">Used styles<span class=text-xs></span></h4>
-    Click each stylesheet to preview its changes
-  </div>
-<section class='pointer-events-none z-2 p-0.5 [&>*]:rounded-inherit rounded-xl'>
-<aside style='z-index:2' class='bg-gray-100 text-left border border-current absolute tooltip top-0 right-0'> 
-  <p class='p-2 w-3/5'>Select a stylesheet from the list to proceed</p>
-  <button class='rounded-tr-xl border border-current p-2 bg-white'>rollback preview</button>
-  <button class='rounded-b-xl border border-current p-2 w-full bg-white'>download &lt;N&gt; bytes</button>
-</aside>
-<button disabled style='z-index:2' class="p-2 border border-current ripple relative" onclicked="To(qS('main&gt;article'),'cL').add('show')">more actions</button>
-</section>
-</header>
-
-<ol onclick="let cls='bg-yellow-200', t=event.target, i=[].indexOf.call(this.children, To(t,'pN')), cL; if(/bg-yellow-[0-9]+/.test(cL=To(t,'cL')) && t.tagName!='BUTTON') return; qS('.'+cls,0,this)?.classList.remove(cls), cL.add(cls), To(this,['pES','lEC','cL']).remove('pointer-events'), To(this,['pES',{2:'lEC'}]).disabled=0, previewCSS(i)" style="max-height:6rem" class="space-y-1 overflow-y-scroll mt-2.5 my-3">
-<!-- styles list with used styles -->
-</ol>
-<div>
-  Speed up this operation by <input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-bottom placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current" name="boost_3">times
+<h3 class="text-sm font-semibold opacity-70">Visualize trimmed styles</h3>
+<p class="text-sm">Click on each highlighted item for more</p>
+<div class='my-1 tooltip -slide-y no-hover no-focus absolute [&>*]:rounded-inherit rounded-lg items-center overflow-scroll justify-around flex [&>*]:p-2'>
+  <button class='border-l border-r border-current'>preview</button>
+  <button class='border-l border-r border-current'>rollback</button>
+  <button class='border-l border-r border-current'>save CSS</button>
 </div>
-
+<!-- styles list with used styles -->
+<ol ontransitionend="let t=event.target; t.tagName=='HR' && t.style.getPropertyValue('--tw-translate-x') == '0%'" onclick="let t=event.target, i=[].indexOf.call(this.children, To(t,'pN')); if(t.tagName!='BUTTON' || !usedCSS[i].length) return; To(this,['pES','cL']).replace('absolute', 'show'), [this, t].forEach((cxt, n)=>console.log(qS('hr'+'[style *=\'--tw-bg-opacity: 0;\''.repeat(n), 0, cxt)?.style.cssText)), console.log('USED', usedCSS[i].length, i), previewCSS(i)" style="max-height:6rem" class="space-y-1 overflow-y-scroll">
+  <li>
+    <button class="text-xs relative ripple w-full divide-x divide-current [&amp;&gt;*]:p-2 flex items-center text-left rounded-full overflow-hidden">
+      <code class="w-full truncate relative z-1">Inline stylesheet or external CSS</code>
+      <hr class="duration-300 ease-out border-0 transform bg-gray-100 h-full absolute inset-0 -left-2 -right-2" style="border:none; --tw-bg-opacity: 1; --tw-translate-x: -100%;">
+      <pre class="text-right relative z-1" style="width:45%;">0 bytes</pre>
+    </button>
+  </li>
+</ol>
+      <div>
+        Speed up this operation by <input type="number" placeholder="&lt;N&gt;x" min="1" class="inline-block align-bottom placeholder-gray-600 w-16 border-b-2 px-2 p-1 bg-transparent text-center mx-1 border-current" name="boost_3">times
+      </div>
     </section>
   </main>
   <aside onclick="let main=To(this,'pES'), sec=qS('.show',0,main), secs=main.children, hr=qS('.border-current',0,this), t=event.target, cls=['absolute', 'show'], i=[].indexOf.call(this.children, t); if(t.tagName!=='BUTTON') return; sec!=secs[i] &amp;&amp; [sec, secs[i]].forEach(s=&gt;cls.forEach(cl=&gt;To(s,'cL').toggle(cl))), [hr, qS('hr',0,t)].forEach(hr=&gt;To(hr,'cL').toggle('border-current'))" class="[&amp;&gt;*]:relative mt-1 divide-x divide-current flex justify-around bg-white [&amp;&gt;*]:p-2 rounded-inherit">
-    <button class="ripple flex-1"><p>extract styles</p><hr class="p-0.5 border-4 inline-block rounded-full border-current"></button>
-    <button class="ripple flex-1"><p>read webpage</p><hr class="p-0.5 border-4 inline-block rounded-full"></button>
+    <button class="ripple flex-1"><p>read webpage</p><hr class="p-0.5 border-4 inline-block rounded-full border-current"></button>
+    <button class="ripple flex-1"><p>extract styles</p><hr class="p-0.5 border-4 inline-block rounded-full"></button>
     <button class="ripple flex-1"><p>visualize</p><hr class="p-0.5 border-4 inline-block rounded-full"></button>
   </aside>
 </main>
 </aside>
 <iframe id="frame" class="h-full w-full rounded-t-3xl" style="background: none;"></iframe>
-<aside class="absolute rounded-3xl bg-white p-5 text-black duration-300 text-left inert"><h3 class="text-lg font-semibold opacity-70">Proxying Webpage And Its Assets</h3><p>Takes a little longer than direct visits...</p>
+<aside class="absolute rounded-3xl p-5 duration-300 text-left inert">
+  <h3 class="text-lg font-semibold opacity-70">Proxying Webpage And Its Assets</h3>
+  <p>Takes a little longer than direct visits...</p>
+  <hr class='to-fro'>
 </aside>
 </section>
 
@@ -580,18 +511,24 @@ ready=(wdw=window, cb, doc)=>loops[0]=_=>(doc=wdw.document||wdw.contentDocument)
 
  // frame.src='_index.html', begin(qS('form button')),
  frame.onload=title=>{
+   To(frame, 'cL').remove('inert'), form.url.value = frame.contentWindow.location.href,
    console.log("::PROXIED::"), title = frame.contentDocument.title,
-   frameDOMReady = !0, title && (qS('h4',0,secs[1]).textContent = 'TITLE: '+ title),
-   loops[0] = null, rStyles()
+   frameDOMReady = !0, title && (qS('h4',0,secs[0]).textContent,  'TITLE: '+ title),
+   loops[0] = null, rElems()
  };
  
- function begin(btn) {
-   let retry = !btn, cls=['absolute','show'];
+ function begin(site) {
+   let retry = !site, cls=['absolute','show'],
+       loc = frame.contentWindow.location;
    // only fire ready listener when not retrying
+   site ||= form.url.value.trim(),
+   To(form, ['pES', 'cL']).replace('show', 'absolute'),
      //if(!retry)
+   ['nES', ''].forEach((s, i)=>To(frame, [s, 'cL'])[cLs(i)]('inert')),
+   loc.href == site ? loc.reload() : frame.src= /*'/api/proxy?target=' +*/site,
    ready(frame, _=>{
-     setTimeout(_=>['p','n'].forEach((s,i)=>To(frame,[s+'ES','cL'])[cLs(i)]('inert')), 250),
-     To(qS('form >label>div'),'cL').add('inert');
+     setTimeout(_=>['p','n'].forEach((s,i)=>To(frame,[s+'ES','cL'])[cLs(i)]('inert')), 200),
+     To(qS('form > div'),'cL').add('inert');
    });
    // toggle iframe parent visibility
    To(frame,['pN','cL']).replace(cls[+retry], cls[+!retry]),
@@ -600,6 +537,9 @@ ready=(wdw=window, cb, doc)=>loops[0]=_=>(doc=wdw.document||wdw.contentDocument)
 </script>
 
 <script>
+`
+.[&>*]:inline-block 32xl:bg-unset .small`.replace(/[#.](bg-unset|small)(?=,|\s|)/, a=>console.log(a))
+  
 // !emailjsInited&&emailjs.init({publicKey:"qydN_Wpez4U_igzD2"});
 let currentSec, currentIdx;
 window.addEventListener('DOMContentLoaded', _=>{
@@ -620,7 +560,7 @@ window.addEventListener('DOMContentLoaded', _=>{
     // if(frameDOMReady && !loops[0]?.call && Object.keys(rules).length < frame.contentDocument.styleSheets.length)  rStyles();
     
     let idx = secs.findIndex(sec=>To(sec,'cL').contains('show')), time=3,
-        boost=Math.min(loops[idx]?.boost||1, 30), tasks=['styles', 'selectors', 'used CSS'], vars=[rules, selectors, usedCSS], result = Object.keys(vars[idx]).length;
+        boost=Math.min(loops[idx]?.boost||1, 30), tasks=['queries', 'styles', 'CSS'], vars=[selectors, rules, usedCSS], result = Object.keys(vars[idx]).length;
     // console.log("::IDX::", idx),
     // persistent code to check and update state via text
     sTxt.data = `Read${'ing'.repeat(!!loops[idx])} ${tasks[idx]}${(loops[idx]&&!result)?'...':' ('+result+')'}`,
