@@ -72,154 +72,22 @@ html {
     initial-value: 360deg;
   }
   </style>
-<script>
-
-function extractMatchingCSS(css, selector) {
-    let i = 0;
-    const len = css.length;
-
-    function skipWhitespace() {
-        while (i < len && /\s/.test(css[i])) i++;
-    }
-
-    function parseBlock() {
-        const nodes = [];
-
-        while (i < len) {
-            skipWhitespace();
-
-            if (css[i] === '}') {
-                i++;
-                break;
-            }
-
-            const start = i;
-
-            // Read prelude (@media ... or selector)
-            while (i < len && css[i] !== '{' && css[i] !== '}') i++;
-
-            const prelude = css.slice(start, i).trim();
-
-            if (css[i] !== '{') continue;
-
-            i++; // consume {
-
-            if (prelude.startsWith('@media')) {
-                const children = parseBlock();
-
-                if (children.length) {
-                    nodes.push({
-                        type: 'media',
-                        prelude,
-                        children
-                    });
-                }
-            } else {
-                const bodyStart = i;
-                let depth = 1;
-
-                while (i < len && depth) {
-                    if (css[i] === '{') depth++;
-                    else if (css[i] === '}') depth--;
-                    i++;
-                }
-
-                const body = css.slice(bodyStart, i - 1);
-
-                if (prelude.includes(selector)) {
-                    nodes.push({
-                        type: 'rule',
-                        selector: prelude,
-                        body
-                    });
-                }
-            }
-        }
-
-        return nodes;
-    }
-
-    function stringify(nodes) {
-        let out = '';
-
-        for (const node of nodes) {
-            if (node.type === 'rule') {
-                out += `${node.selector}{${node.body}}\n`;
-            } else {
-                out += `${node.prelude}{\n${stringify(node.children)}}\n`;
-            }
-        }
-
-        return out;
-    }
-
-    return stringify(parseBlock());
-}  
-</script>
 
 <script>
 // styleStrings.replace(/\\/g,'').search(classname)
 let secs, rules = [], unique={}, selectors=[], usedCSS=[], previewIdxs=[];
 
 function previewCSS(i) {
-  let lists = qS('ol',0,secs[2]).children;
-  console.log("preview indices", previewIdxs, i);
+  let lists = qS('ol',0,secs[2]).children, name = qS('code', 0, lists[i]).textContent.split('.'),
+	blob = new Blob([usedCSS[i]], {type:`text/css`});
+
+	name.length > 1 && name.pop(), name = name.join('.') + '-used.css',
+  console.log("preview indices",  i, name);
+	save(blob, name, !i)
 }
 
 function getCSS() {
-  let list_1 = qS('ol',0,secs[0]), list_2=qS('ol',0,secs[2]),
-      read = rules.length, out=qS('h4>span',0,secs[2]),
-      hr = `<hr class="border-0 transform bg-green-200 h-full absolute inset-0 -left-2 -right-2" style="--tw-bg-opacity: 0.7; --tw-translate-x: -100%;">`;
-  
-  // only exit if the proxied page has no styles to be read
-  if(!read && frame.contentDocument.styleSheets.length)  out.textContent = '("Read styles" then retry)';
-  if(!selectors.length) out.textContent = '("Read selectors" and retry)';
-  
-  // set i to 3 to skip over the heavy files like tailwind css and fontawesome's all.min.css files
-	let i=3, selected=[], _rule, once, _rules=[], fixSpace=str=>str.replace(/(^|})(\s*\.[^{\n]+?)\s+(?=\{)/gm, (_, p1, selector) => p1 + selector.replace(/\s+/g, '')),
-      esc=cls=>cls.replace(/([^a-zA-Z0-9_-])/g, '\\$1'), redoLoops,
-      addList=(css, idx)=>{
-        let li = list_1.children[idx].cloneNode(!0);
-        li.innerHTML = li.innerHTML = `<button class="ripple text-xs relative overflow-hidden ${li.className} bg-yellow-100 text-left w-full">
-          ${li.innerHTML.replace('</code>', '</code>\n'+hr)}
-        </button>`, li.removeAttribute('class'),  list_2.children[idx] || (list_2.appendChild(li), qS('pre', 0, li).textContent = byteFormat(css.length));
-        return qS('pre', 0, li);
-      }, sizeOut;
-  
-	loops[2]=redoLoops=_=>{
-    // adding a return statement below makes the loop exit with the function ending the 
-    // comma-separated line below.
-    // This happens because the scope of redoLoops is exited thus its closure over the inner
-    // loop is opened and the recursion never ends due to the context
-    // for its ending - `i < read`, loses its meaning
-	  let j = 0; // initialize and reset j
-		if(_rules = rules[i]) i&&(out.textContent=`(Trimmed < ${i+1} styles)`), console.log, ("::EACH::", i, _rules?.length), /*To(*/sizeOut=addList(usedCSS[i]||='', i)/*, 'pN').scrollIntoView()*/, loops[2]=_=>{
-		  
-			if(_rule = _rules[j]) {  
-       let { cssText } = _rule, name, text = _rule[(name=_rule.constructor.name)=='CSSStyleRule'?'selectorText':'cssText'].replace(/\\/g,'');
-       
-         /CSSStyleRule|CSSMediaRule/.test(name)
-         ? selectors.forEach(a=>{
-            let other, temp;
-            // added consideration for behaviour whereby selectors like `32xl:container` are processed as `32 xl:container`
-            a=a.split(/^(#|\.)/).filter(s=>s).map((s, i)=>i?esc(s):s.replace('.', '\\.')).join('');
-
-            if(~text.search(a) || (other=~text.replace(/\s+/g, '').search(a))) selected.push(a), usedCSS[i]||='', temp=((name=='CSSMediaRule'
-              //work on fixSpace response to put a space before all open braces if absent, unescape '.' escaped for `search` above to work
-              ? extractMatchingCSS(other ? fixSpace(cssText).replace(/\s*\{/g, ' {') : cssText, a.replace(/^\\./, '.'))
-              : cssText)+'\n').repeat(!~selected.indexOf(cssText)),
-              // (previewIdxs[i]||={})[j]&&=(console.log("::DUPLICATE::", j, temp), previewIdxs[i][j] + '\n' + temp.trim()),
-              (previewIdxs[i]||={})[j] ||= temp.trim(), usedCSS[i] += temp,
-              selected.push(cssText);
-         })
-         : (usedCSS[i]||='', usedCSS[i] += ~selected.indexOf(cssText) ? '' : (selected.push(cssText), cssText+'\n')),
-         sizeOut.textContent = byteFormat(usedCSS[i].length);
-         
-      } else i++, To(sizeOut, ['pN','cL']).remove('bg-yellow-100'), console.log('::LOOP[3]:END::', {i, j, all: _rules.length, used: usedCSS.length, read}, i<read||usedCSS), loops[2] = i < read ? redoLoops : (out.textContent='(Trimmed all styles)', null);
-			j++ // j represents index of styles for which deleteRule, insertRule will be called
-		};
-		else console.log('::LOOP[3]:TERMINATE::', i), loops[2]=null;
-	}
+	
 }
 
 let selectorsRgx='[.#](';
@@ -232,7 +100,7 @@ function rElems() {
   loops[0]=_=>{
     // at high invocation multipliers, some loops are called after the loop has ended
     if(!loops[0]) return loops[0] = null;
-    if(i>=eLen) return loops[0]=null;
+    if(i>=eLen) return loops[0]=null, console.log("SELECTORS", selectors.filter(s=>~s.search('fa')));
     let elem = elems[i], dump=[];
     [].forEach.call(elem.attributes, attr=>{
       attrs.filter(str=>~attr.name.search(str.trim())).length
@@ -250,7 +118,7 @@ function rStyles() {
   let templates = rStyles.lists ||= [], at=rules.length, styles=[].filter.call(frame.contentDocument.styleSheets, style=>{
         let css = style.cssRules;
         return css.length && (rules.find(st=>css.length == st.length && st[0].cssText == css[0].cssText) || !rules.length)
-      }), stylesLen = styles.length, __rules=[], list = qS('ol', 0, secs[1]), 
+      })/*.filter(s=>~s.href?.search(/page/))*/, stylesLen = styles.length, __rules=[], list = qS('ol', 0, secs[1]), 
       // the prefix u_ denotes variables for the used css section
       u_list = qS('ol', 0, secs[2]), i = 0, shim = { cssText:'' };
 
@@ -263,39 +131,68 @@ function rStyles() {
 // 1st phase of extraction: read cssRules and store them in `rules` with their href or key
   loops[1]=_=>{
     if(i==stylesLen) {
-		i = 0;
-    // using [].map over Object.keys to get the right order of keys without any intrinsic sorting which is done by the latter
-		let keys=Object.keys(rules), keysLength=(__rules||keys).length, j=0, lists = [list, u_list].map(lst=>lst.children), size=0,
-		cssRules = __rules[j], rulesLen = cssRules.length, sheets=[];/*will be reset for next cssRule*/
-		// 2nd phase: filter out and store CSS style blocks only
-		loops[1]=_=>{
-			if(!loops[1]?.call) return; //exit because invocations of loops[0] above are still called after everything is done and loops[0] is set to null
-			if(j>=keysLength) loops[2] = loops[1] = null;
+    	let atRules = {},
+				// these are variables used to read, store cssRules and update the UI with their sizes
+				keysLength=__rules.length, j=0, lists = [list, u_list].map(lst=>lst.children), size=0,
+		    cssRules = __rules[j], rulesLen = cssRules.length, sheets=[]; /*will be reset for next cssRule*/
+		
+			i = 0, loops[1]=_=>{
+			if(!loops[1]?.call) return console.log("FOURTH WALL?"); //exit because invocations of loops[0] above are still called after everything is done and loops[0] is set to null
+			if(j>=keysLength) loops[2] = loops[1] = null, animations.addRippleAnimations();
       else {
 				// reset inner loop counters and state, and move on to the next cssRule
 				if(i>=rulesLen) {
+					// console.log("@ rules", atRules);
           // To(lists[1][j+at], ['fEC', 'cL']).remove('bg-yellow-300'),
           let hrs = qS('hr', 0, lists[1][j+at]).style;
           hrs.getPropertyValue('--tw-translate-x') != '-100%' && ['--tw-translate-x', '--tw-bg-opacity']
           .forEach((s,i)=>hrs.setProperty(s, i ? '.6' : '0%')),
-					rules.push(sheets), ++j, lists.forEach(lst=>lst[j+at]?.removeAttribute('hidden')), __rules[j] && (rulesLen=(cssRules = __rules[j]).length), size=i=0, sheets=[];
+					rules.push(sheets), ++j, lists.forEach(lst=>lst[j+at]?.removeAttribute('hidden')), __rules[j] && (rulesLen=(cssRules = __rules[j]).length),
+					atRules = {}, size=i=0, sheets=[];
 				} else {
           let _rule = cssRules[i], css = _rule.cssText;
           sheets.push(_rule), To(lists[0][j+at], { 2:'lEC' }).textContent=byteFormat(size+=css.length);
           
           // this code will be defined in a function invoked here
-          let name, text = _rule[(name=_rule.constructor.name)=='CSSStyleRule'?'selectorText':'cssText']
+          let key, name=_rule.constructor.name, selText = _rule.selectorText,
+						text = _rule.cssText
             // 1. Decode CSSOM hex escapes (e.g., \3A or \3a into actual characters)
-            .replace(/\\([0-9a-fA-F]{1,6})\s?/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-            // 2. Strip remaining literal escape backslashes
-            .replace(/\\/g, ''), queriesRgx = selectorsRgx.replace(/\|$/, ")(?=,|\s|)");
-          
-          loops[2]=_=>_,
-          text.replace(new RegExp(queriesRgx), (m,n,s)=>{
-            // console.log(text, "MATCH", m, "AT", n,":", _rule.cssText),
-            To(lists[1][j+at], ['fEC', 'cL']).add('bg-yellow-300'),
-            (s = To(lists[1][j+at], { 3:'lEC' })).textContent = byteFormat((usedCSS[j] += _rule.cssText).length), 
-            To(s, 'pES').style.setProperty('--tw-translate-x', -100 + (100 * i / rulesLen) + '%')
+            .replace(/\\([0-9a-fA-F]{1,6})\s?/g, (_, hex) => String.fromCharCode(parseInt(hex, 16))),
+						queriesRgx = new RegExp(selectorsRgx.replace(/\|$/, ")(?=,|~|:|\\+|\\s|\\{|\\))")),
+            isMedia = name == "CSSMediaRule", styled = [,];
+					
+					if(isMedia) (
+						styled = text.replace(/[^\{]+\{/, s=>(usedCSS[j] += s, ''))
+						.split("}").filter(s=>s.trim())
+					)
+						
+          loops[2] ||=_=>_,
+					!/CSS(Style|Media)Rule/.test(name) && ((key = _rule.name||_rule.style&&_rule.style['font-family']) ? atRules[key] ||= (usedCSS[j] += `\n/* @ - rule */\n`, text) : usedCSS[j] += text);
+					
+					/*  Use a single-run loop which only runs multiple times for media queries to get all matching styles
+							Strip remaining literal escape backslashes without modifying `text` into invalid CSS for when it is matched and stored
+					*/
+					for(let o = 0, each; o < styled.length; each = styled[o++]) (each || text).replace(/\\/g, '').replace(queriesRgx, (m,n,s)=>{
+						/* Further separation of logic because only media and style rules can be matched here
+							 with a common code logic
+						*/
+						let split=arg=>{
+							let [qrs, sts] = arg.split("{");
+							// added a space to the split string to ensure it matched on of the regex conditions
+							qrs = qrs.split(',').filter(s=>queriesRgx.test(s.replace(/\\/g, '') + " ")).join(",");
+							return qrs.trimEnd() + " {" + sts
+						};
+						if(isMedia && each) {
+							text = split(each+'}') + "\n}".repeat(!styled[o+1]);
+							console.log("MEDIA", each, text, styled.length);
+							
+						} else if(/,/.test(selText)) {
+							text = split(text)
+						}
+            
+						To(lists[1][j+at], ['fEC', 'cL']).add('bg-yellow-300'),
+            (s = To(lists[1][j+at], { 3:'lEC' })).textContent = byteFormat((usedCSS[j] += text).length), 
+            To(s, 'pES').style.setProperty('--tw-translate-x', -100 + (98 * i / rulesLen) + '%')
           })
         }
 				i++
@@ -313,9 +210,6 @@ function rStyles() {
 </script>
 </head>
 <body class="text-white" onanimationend="setTimeout(_=&gt;To(gradient,'cL').remove('opacity-0'), 60)">
-	<div id="retry" class="py-3 text-sm no-hover no-focus no-focus-within fixed tooltip -slide-y w-full text-center bg-n-black">
-	  � Success or error? You may retry with another webpage whether or not there was a snag<button class="ripple relative mt-3 ml-3 rounded rounded-tr-xl p-3 ripple bg-blue-100" onclick="page.retry()">Another?</button>
-	</div>
   
 	<main class="relative text-center vh-full flex justify-around items-center flex-col">
           <!--overflow-hidden class on section below showed only the elements in .__class__ -  had to remove it- It is dangerous for elements with a auto height and shifting scroll depth due to editable children -->
@@ -350,7 +244,7 @@ function rStyles() {
 
 <button onclick="/*plus, minus*/let ds=['M12 5v14M5 12h14', 'M5 12h14']; path=To(this,{2:'fEC'}), i=ds.indexOf(path.getAttribute('d')); path.setAttribute('d', ds[+!i]), To(this,['nES','cL']).toggle('inert')" class="absolute bottom-full text-black bg-yellow-600 rounded-full p-2.5 tooltip to-top show" style="--arrow-size:10px; --arrow-x:-44%;--arrow-y:-2px;--arrow-color:rgb(217,119,6);" hidden="">
   <svg xmlns="http://w3.org" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 12h14"></path> </svg></button>
-<aside class="inert absolute bottom-full w-full sm:w-auto [&amp;&gt;*]:inline-block [&amp;&gt;*]:rounded-inherit rounded-2xl p-1 flex justify-around items-center sm:text-sm text-xs duration-300 sm:p-3 sm:space-x-10 sm:px-4">
+<aside class="inert absolute bottom-full w-full sm:w-auto [&amp;&gt;*]:inline-block [&amp;&gt;*]:rounded-inherit rounded-2xl p-1 flex justify-around items-center text-xs duration-300 sm:p-3 sm:space-x-10 sm:px-4">
 
 <section class="[&amp;&gt;*]:inline-block relative">
   <span><strong class="text-xl">*</strong><svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" class="inline-block" width="30">
@@ -380,8 +274,8 @@ function rStyles() {
     </div>
     <div style="background-image: url(icons/play-pause.webp); background-size: 50% auto;" class="m-1.5 p-5 relative rounded-inherit font-semibold bg-blue-100 bg-center bg-no-repeat shadow"></div>
   </button>
-  <button onclick="To(this,['pN','nES','cL']).remove('inert')" id="state" class="p-0 pl-2 -ml-2 relative border-t text-xs border-r rounded-tr-xl border-current ripple">
-      Waiting...<code class="inline-block ml-1 px-1 py-2 border-current border-l">view</code>
+  <button onclick="To(this, 'fEC').textContent = To(this,['pN','nES','cL']).toggle('inert') ? 'view' : 'close'" id="state" class="p-0 pl-1.5 -ml-1 relative border-t text-xs border-r rounded-tr-xl border-current ripple">
+      Waiting...<code class="inline-block ml-1.5 p-1.5 py-3 border-current border-l">view</code>
   </button>
 </section>
 
@@ -444,16 +338,16 @@ function rStyles() {
       
 <h3 class="text-sm font-semibold opacity-70">Visualize trimmed styles</h3>
 <p class="text-sm">Click on each highlighted item for more</p>
-<div class='my-1 tooltip -slide-y no-hover no-focus absolute [&>*]:rounded-inherit rounded-lg items-center overflow-scroll justify-around flex [&>*]:p-2'>
-  <button class='border-l border-r border-current'>preview</button>
-  <button class='border-l border-r border-current'>rollback</button>
-  <button class='border-l border-r border-current'>save CSS</button>
+<div class='py-1 divide-x divide-current tooltip -slide-y no-hover no-focus absolute left-0 items-center overflow-scroll justify-around flex [&>*]:relative [&>*]:p-1'>
+  <button class="ripple flex-1">preview</button>
+  <button class="ripple flex-1">rollback</button>
+  <button class="ripple flex-1">save CSS</button>
 </div>
 <!-- styles list with used styles -->
-<ol ontransitionend="let t=event.target; t.tagName=='HR' && t.style.getPropertyValue('--tw-translate-x') == '0%'" onclick="let t=event.target, i=[].indexOf.call(this.children, To(t,'pN')); if(t.tagName!='BUTTON' || !usedCSS[i].length) return; To(this,['pES','cL']).replace('absolute', 'show'), [this, t].forEach((cxt, n)=>console.log(qS('hr'+'[style *=\'--tw-bg-opacity: 0;\''.repeat(n), 0, cxt)?.style.cssText)), console.log('USED', usedCSS[i].length, i), previewCSS(i)" style="max-height:6rem" class="space-y-1 overflow-y-scroll">
+<ol ontransitionend="let t=event.target; t.tagName=='HR' && t.style.getPropertyValue('--tw-translate-x') == '0%'" onclick="let t=event.target, i=[].indexOf.call(this.children, To(t,'pN')); if(t.tagName!='BUTTON') return; usedCSS[i].length && To(this,['pES','cL']).replace('absolute', 'show'), [this, t].forEach((cxt, n)=>console.log(qS('hr'+'[style *=\'--tw-bg-opacity: 0;\''.repeat(n), 0, cxt)?.style.cssText)), previewCSS(i)" style="max-height:6rem" class="space-y-1 overflow-y-scroll">
   <li>
-    <button class="text-xs relative ripple w-full divide-x divide-current [&amp;&gt;*]:p-2 flex items-center text-left rounded-full overflow-hidden">
-      <code class="w-full truncate relative z-1">Inline stylesheet or external CSS</code>
+    <button class="text-xs relative ripple w-full [&amp;&gt;*]:p-2 flex items-center text-left rounded-full overflow-hidden">
+      <code class="w-full truncate relative z-1 border-r border-current">Inline stylesheet or external CSS</code>
       <hr class="duration-300 ease-out border-0 transform bg-gray-100 h-full absolute inset-0 -left-2 -right-2" style="border:none; --tw-bg-opacity: 1; --tw-translate-x: -100%;">
       <pre class="text-right relative z-1" style="width:45%;">0 bytes</pre>
     </button>
@@ -512,7 +406,7 @@ ready=(wdw=window, cb, doc)=>loops[0]=_=>(doc=wdw.document||wdw.contentDocument)
  // frame.src='_index.html', begin(qS('form button')),
  frame.onload=title=>{
    To(frame, 'cL').remove('inert'), form.url.value = frame.contentWindow.location.href,
-   console.log("::PROXIED::"), title = frame.contentDocument.title,
+   title = frame.contentDocument.title,
    frameDOMReady = !0, title && (qS('h4',0,secs[0]).textContent,  'TITLE: '+ title),
    loops[0] = null, rElems()
  };
@@ -537,12 +431,11 @@ ready=(wdw=window, cb, doc)=>loops[0]=_=>(doc=wdw.document||wdw.contentDocument)
 </script>
 
 <script>
-`
-.[&>*]:inline-block 32xl:bg-unset .small`.replace(/[#.](bg-unset|small)(?=,|\s|)/, a=>console.log(a))
-  
+
 // !emailjsInited&&emailjs.init({publicKey:"qydN_Wpez4U_igzD2"});
 let currentSec, currentIdx;
 window.addEventListener('DOMContentLoaded', _=>{
+		
   //if(html.style.backdropFilter === undefined) html.style.setProperty('--bg-opacity-pad', 0.7);
   animations.addRippleAnimations();
   secs = [].slice.call(qS('main',0,To(state, ['pN','nES'])).children) || qS('main>section',!0,To(state, ['pN','nES']));
@@ -561,7 +454,6 @@ window.addEventListener('DOMContentLoaded', _=>{
     
     let idx = secs.findIndex(sec=>To(sec,'cL').contains('show')), time=3,
         boost=Math.min(loops[idx]?.boost||1, 30), tasks=['queries', 'styles', 'CSS'], vars=[selectors, rules, usedCSS], result = Object.keys(vars[idx]).length;
-    // console.log("::IDX::", idx),
     // persistent code to check and update state via text
     sTxt.data = `Read${'ing'.repeat(!!loops[idx])} ${tasks[idx]}${(loops[idx]&&!result)?'...':' ('+result+')'}`,
     spin.style.setProperty('animation-duration', `${loops[idx] ? 3-(boost>1 ? boost/11 : 0) : 0}s`),
