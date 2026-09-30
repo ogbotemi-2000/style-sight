@@ -1,0 +1,115 @@
+@font-feature-values Font Name {
+  font-display: swap;
+  @styleset {
+    nice-style: 12;
+  }
+  @swash {
+    fancy: 2;
+  }
+}
+
+@font-palette-values --identifier {
+  font-family: "Bixa";
+}
+.my-class {
+  font-palette: --identifier;
+}
+
+@counter-style circled-alpha {
+  system: fixed;
+  symbols: Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ Ⓞ Ⓟ Ⓠ Ⓡ Ⓢ Ⓣ Ⓤ Ⓥ Ⓦ Ⓧ Ⓨ Ⓩ;
+  suffix: " ";
+}
+
+/* With a <size-query> */
+@container (width > 400px) {
+  h2 {
+    font-size: 1.5em;
+  }
+}
+
+/* With an optional <container-name> */
+@container tall (height > 30rem) {
+  p {
+    line-height: 1.6;
+  }
+}
+
+/* With a <container-name> only (query is optional) */
+@container sidebar {
+  h2 {
+    background: blue;
+  }
+}
+
+/* With a <scroll-state> */
+@container scroll-state(scrollable: top) {
+  .back-to-top-link {
+    visibility: visible;
+  }
+}
+
+/* With an anchored query */
+@container anchored(fallback: bottom) {
+  .infobox::before {
+    content: "▲";
+    bottom: 100%;
+    top: auto;
+  }
+}
+
+/* With a <container-name> and a <scroll-state> */
+@container sticky-heading scroll-state(stuck: top) {
+  h2 {
+    background: purple;
+    color: white;
+  }
+}
+
+/* Multiple queries in a single condition */
+@container (width > 400px) and style(--responsive: true) {
+  h2 {
+    font-size: 1.5em;
+  }
+}
+
+/* Condition list */
+@container card (width > 400px), style(--responsive: true), scroll-state(stuck: top) {
+  h2 {
+    font-size: 1.5em;
+  }
+}
+
+/* Boolean style() queries */
+@container style(--theme: one) or style(--theme: two) {
+  /* matched container styles */
+}
+@container style((--theme: one) or (--theme: two)) {
+  /* matched container styles */
+}
+@container style(--theme: one) and style(--theme: two) {
+  /* matched container styles */
+}
+@container style((--theme: one) and (--theme: two)) {
+  /* matched container styles */
+}
+@container not style(--theme: one) {
+  /* matched container styles */
+}
+
+/* range style() queries */
+@container style(--number > 4) {
+  /* matched container styles */
+}
+
+@color-profile --swop5c {
+  src: url("https://example.org/SWOP2006_Coated5v2.icc");
+}
+
+/* style block */
+.items {
+  list-style: circled-alpha;
+}
+.header {
+  background-color: color(--swop5c 0% 70% 20% 0%);
+}
